@@ -5,3 +5,5 @@ bundleID=net.haqqmisra.pebble
 version=0.0.1
 imagePath=images
 launchSoundPath=sounds
+pdxversion=11200
+buildtime=720027185
