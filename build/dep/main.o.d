@@ -46,7 +46,7 @@ build/src/main.o: src/main.c /usr/arm-none-eabi/include/stdio.h \
  /usr/arm-none-eabi/include/math.h \
  /opt/PlaydateSDK/C_API/pd_api/pd_api_display.h \
  /opt/PlaydateSDK/C_API/pd_api/pd_api_scoreboards.h src/model.h \
- src/util.h
+ src/util.h src/draw.h
 /usr/arm-none-eabi/include/stdio.h:
 /usr/arm-none-eabi/include/_ansi.h:
 /usr/arm-none-eabi/include/newlib.h:
@@ -99,3 +99,4 @@ build/src/main.o: src/main.c /usr/arm-none-eabi/include/stdio.h \
 /opt/PlaydateSDK/C_API/pd_api/pd_api_scoreboards.h:
 src/model.h:
 src/util.h:
+src/draw.h:

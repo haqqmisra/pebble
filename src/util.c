@@ -3,7 +3,12 @@
 
 // Utility Functions for PEBBLE
 
-#define CHAR_BUFF_SIZE 144;
+
+float deg2rad( float nrad )
+{
+	return nrad * 180.0 / M_PI;
+}
+
 
 
 // Convert INT to CHAR string with ITOA()

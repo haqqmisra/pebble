@@ -3,6 +3,9 @@
 
 #include <math.h>
 
+float deg2rad( float nrad );
+
+
 void strrev(char *arr, int start, int end);
 char *itoa(int number, char *arr, int base);
 
