@@ -1,9 +1,0 @@
-name=pebble
-author=Jacob Haqq-Misra
-description=Playdate Energy Balance for Bodies Like Earth Climate Model
-bundleID=net.haqqmisra.pebble
-version=0.0.1
-imagePath=images
-launchSoundPath=sounds
-pdxversion=11200
-buildtime=720069961
