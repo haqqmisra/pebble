@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
 
 #include "pd_api.h"
 #include "model.h"
@@ -28,7 +29,8 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 	return 0;
 }
 
-#define NBELTS 16
+#define NBELTS 18
+#define NPTS NBELTS+2
 
 #define TEXT_WIDTH 86
 #define TEXT_HEIGHT 16
@@ -40,17 +42,19 @@ int dy = 2;
 
 
 
-char out1[144], out2[144], out3[144], out4[144];
+char out[144], out1[144];
+int flag = 0;
 
 
 enum Status { initializing, running, paused, crashed };
 enum Status state = initializing;
 
-float temp[NBELTS+1], lat[NBELTS+1], xlat[NBELTS+1], dxlat[NBELTS];
+float temp[NBELTS+2], lat[NBELTS+2], xlat[NBELTS+2], dxlat[NBELTS+1], t2prime[NBELTS];
 
 
 //float temp[4] = { 15.0, 15.0, 15.0, 15.0 };
 float dt = 8.64e4;	// seconds
+int niter = 0;
 
 static int update( void* userdata )
 {
@@ -70,33 +74,32 @@ static int update( void* userdata )
 
 		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
 
+		//if ( flag == 0 ) {
+		//	float_to_string( FLT_MAX, out1 );
+		//	strcpy( out, "Float max: " );
+		//	strcat( out, out1 );
+		//	pd->system->logToConsole( out );
+		//	flag = 1;
+		//}
+
 	        if ( pushed & kButtonA ) {
 			state = running;
 		}
 	}
 	else if ( state == running ) {
 
-		temp[0] = temp[0] + nextStep( temp[0], dt );
-		temp[1] = temp[1] + nextStep( temp[1], dt );
-		temp[2] = temp[2] + nextStep( temp[2], dt );
-		temp[3] = temp[3] + nextStep( temp[3], dt );
+
+
+		//updateAllLat( temp, dt, NPTS, t2prime, xlat, dxlat );
+		updateAllLat( temp, dt, niter, NPTS, t2prime, lat, xlat, dxlat );
+		niter++;
+
+
+		//float_to_string( t2prime[0] * 0.58, out );
+		//pd->system->logToConsole( out );
 
 
 		printAllLatLines( pd, lat, xlat, temp, NBELTS, x, y );
-
-
-		//	temp = temp + nextStep( temp, dt );
-
-		//float_to_string( temp[0], out1 );
-		//float_to_string( temp[1], out2 );
-		//float_to_string( temp[2], out3 );
-		//float_to_string( temp[3], out4 );
-		//	ftoa( temp, out, 6 );
-
-		//pd->graphics->drawText( out1, strlen( out1 ), kASCIIEncoding, x, y );
-		//pd->graphics->drawText( out2, strlen( out2 ), kASCIIEncoding, x, y-20 );
-		//pd->graphics->drawText( out3, strlen( out3 ), kASCIIEncoding, x, y-40 );
-		//pd->graphics->drawText( out4, strlen( out4 ), kASCIIEncoding, x, y-60 );
 
 	        if ( pushed & kButtonA ) {
 			state = paused;
@@ -108,8 +111,11 @@ static int update( void* userdata )
 		}
 	}
 	else if ( state == crashed ) {
+		pd->system->error( "Halting: model crashed" );
 	}
-	else {}
+	else {
+		pd->system->error( "Halting: non-existent state reached" );
+	}
 
 	pd->system->drawFPS( 0, 0 );
 
