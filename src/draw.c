@@ -30,7 +30,7 @@ void printLatLine( PlaydateAPI* pd, float lat, float xlat, float temp, int x, in
 
 	strcat( out, f1 );
 	strcat( out, " " );
-	//strcat( out, f2 );
+	strcat( out, f2 );
 	strcat( out, " " );
 	strcat( out, f3 );
 
@@ -44,6 +44,9 @@ void printAllLatLines( PlaydateAPI* pd, float lat[], float xlat[], float temp[],
 	int xtop = 50;
 	int ytop = 225;
 	int dy = 12;
+	//for ( i = size-1; i >= 0; i-- ) {
+	//	printLatLine( pd, lat[i], xlat[i], temp[i], xtop, ytop - i*dy );
+	//}
 	for ( i = size; i > 0; i-- ) {
 		printLatLine( pd, lat[i], xlat[i], temp[i], xtop, ytop - i*dy );
 	}

@@ -2,41 +2,48 @@
 
 #define TFREEZE 0.0	// degC
 
-void init( float *temp, float *lat, float *xlat, float *dxlat, int size, float tempinit )
+void init( float *temp, float *lat, float *xlat, float *dxlat, int npts, int nbelts, float tempinit )
 {
 	int i;
 
-	lat[0]       = -M_PI / 2;
-	lat[size+1]  = M_PI / 2;
-	xlat[0]      = sinf( lat[0] );
-	xlat[size+1] = sinf( lat[size-1] );
+	lat[0]          = -M_PI / 2;
+	lat[npts-1]     = M_PI / 2;
+	xlat[0]         = sinf( lat[0] );
+	xlat[npts-1]    = sinf( lat[npts-1] );
 
-	for ( i = 1; i < size+1; ++i ) {
+	for ( i = 1; i < npts - 1; ++i ) {
 		//lat[i]  = lat[0] + i * M_PI / ( size - 2 );
-		lat[i]  = lat[0] + ( 1 + 2 * ( i - 1 ) ) * M_PI / ( 2 * size );
-		xlat[i] = sinf( lat[i] );
+		lat[i]     = lat[0] + ( 1 + 2 * ( i - 1 ) ) * M_PI / ( 2 * nbelts );
+		xlat[i]    = sinf( lat[i] );
 	}
-	for ( i = 0; i < size+1; ++i ) {
+	for ( i = 0; i < npts - 1; ++i ) {
 		dxlat[i] = fabsf( xlat[i+1] - xlat[i] );
 	}
-	for ( i = 0; i < size+2; ++i ) {
+	for ( i = 0; i < npts; ++i ) {
 		temp[i] = tempinit;
 	}
 	return;
 }
 
-void diff( float temp[], float xlat[], float dxlat[], float *t2prime, int size )
+void diff( float temp[], float xlat[], float dxlat[], float *thermal, int npts )
 {
-	float tprime[size+1], tprimeave[size];
-	int k;
+	//float tprime[npts-1], dprime[npts-1];
+	float tprime, t2prime, dprime, dum1, dum2, dum3, dum4;
+	int i;
+	float diff = 0.58;
 
-	for ( k = 0; k < size+1; k++ ) {
-		tprime[k] = ( temp[k+1] - temp[k] ) / dxlat[k];
-	}
-	for ( k = 0; k < size; k++ ) {
-		tprimeave[k] = ( tprime[k] * dxlat[k] + tprime[k-1] * dxlat[k-1] ) / ( dxlat[k] + dxlat[k-1] );
-		//t2prime[k]   = ( ( ( powf( dxlat[k] / 2, 2 ) ) - ( powf( dxlat[k-1] / 2, 2 ) ) ) * ( 1 - powf( xlat[k], 2 ) ) * tprimeave[k] + ( powf( dxlat[k-1] / 2, 2 ) ) * ( 1 - powf( xlat[k] + ( dxlat[k] / 2 ), 2 ) ) * tprime[k] - ( ( powf( dxlat[k] / 2, 2 ) ) * ( 1 - powf( xlat[k] - ( dxlat[k-1] / 2 ), 2 ) ) ) * tprime[k-1] ) / ( ( dxlat[k] / 2 ) * ( dxlat[k-1] / 2 ) * ( dxlat[k] / 2 + dxlat[k-1] / 2 ) );
-		t2prime[k] = 1.0;
+	for ( i = 1; i < npts - 1; i++ ) {
+		tprime = ( temp[i+1] - temp[i-1] ) / ( dxlat[i] + dxlat[i-1] );
+
+		dum1    = temp[i+1] - 2 * temp[i] + temp[i-1];
+		dum2    = powf( dxlat[i], 2 ) / 2 + powf( dxlat[i-1], 2 ) / 2;
+		t2prime = dum1 / dum2;
+
+		dprime = 0;
+
+		dum3         = ( 1 - powf( xlat[i], 2 ) ) * t2prime;
+		dum4         = -2 * xlat[i] * tprime;
+		thermal[i]   = diff * ( dum3 + dum4 );
 	}
 	return;
 }
@@ -46,8 +53,9 @@ float getInfrared( float temp )
 	float irad;
 	float Arad = 203.0;	// W m^-2
 	float Brad = 2.0;	// W m^-2 degC^-1
+	float KtoC = 273.16;
 
-	irad = Arad + Brad * temp;
+	irad = Arad + Brad * ( temp - KtoC );
 	return irad;
 }
 
@@ -67,7 +75,7 @@ float getAlbedo( float temp )
 
 float getSolcon( float lat, float dt, int niter )
 {
-	float obliquity = 23.5;
+	float obliquity = 0.0;
 	float solcon = 1360;	// W m^-2
 
 	float halfday, mumean, solar;
@@ -99,11 +107,9 @@ float getSolcon( float lat, float dt, int niter )
 }
 
 
-float nextStep( float temp, float dt, int niter, float lat, float t2p )
+float nextStep( float temp, float dt, int niter, float lat, float thermal )
 {
-	//float solcon = 340;	// W m^-2
 	float cp     = 5.25e6;	// J m^-2 degC^-1
-	float diff   = 0.58;
 	float ir, alb, solcon, dtemp, dum, dum2;
 
 	ir     = getInfrared( temp );
@@ -111,27 +117,24 @@ float nextStep( float temp, float dt, int niter, float lat, float t2p )
 	solcon = getSolcon( lat, dt, niter );
 
 	dum = dt / cp;
-	//dum2 = diff * t2p;
 
-	dtemp = ( ( 1 - alb ) * solcon - ir ) * dum;
+	dtemp = ( ( 1 - alb ) * solcon - ir + thermal ) * dum;
+	//dtemp = ( ( 1 - alb ) * solcon - ir ) * dum;
 
 	return dtemp;
 }
 
-void updateAllLat( float *temp, float dt, int niter, int size, float *t2p, float lat[], float xlat[], float dxlat[] )
+void updateAllLat( float *temp, float dt, int niter, int npts, float *thermal, float lat[], float xlat[], float dxlat[] )
 {
 	int i;
 
-	//diff( temp, xlat, dxlat, t2p, size );
+	diff( temp, xlat, dxlat, thermal, npts );
 
-	for ( i = 0; i < size; i++ ) {
-		temp[i] = temp[i] + nextStep( temp[i], dt, niter, lat[i], t2p[i] );
+	for ( i = 1; i < npts - 1; i++ ) {
+		temp[i] = temp[i] + nextStep( temp[i], dt, niter, lat[i], thermal[i] );
 	}
+	temp[0]      = temp[1];
+	temp[npts-1] = temp[npts-2];
 
 	return;
 }
-
-
-
-
-

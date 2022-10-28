@@ -49,10 +49,7 @@ int flag = 0;
 enum Status { initializing, running, paused, crashed };
 enum Status state = initializing;
 
-float temp[NBELTS+2], lat[NBELTS+2], xlat[NBELTS+2], dxlat[NBELTS+1], t2prime[NBELTS];
-
-
-//float temp[4] = { 15.0, 15.0, 15.0, 15.0 };
+float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS];
 float dt = 8.64e4;	// seconds
 int niter = 0;
 
@@ -70,7 +67,7 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, x, y );
 
-		init( temp, lat, xlat, dxlat, NBELTS, 15.0 );
+		init( temp, lat, xlat, dxlat, NPTS, NBELTS, 273.0 );
 
 		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
 
@@ -88,18 +85,11 @@ static int update( void* userdata )
 	}
 	else if ( state == running ) {
 
-
-
-		//updateAllLat( temp, dt, NPTS, t2prime, xlat, dxlat );
-		updateAllLat( temp, dt, niter, NPTS, t2prime, lat, xlat, dxlat );
+		updateAllLat( temp, dt, niter, NPTS, thermal, lat, xlat, dxlat );
 		niter++;
 
-
-		//float_to_string( t2prime[0] * 0.58, out );
-		//pd->system->logToConsole( out );
-
-
-		printAllLatLines( pd, lat, xlat, temp, NBELTS, x, y );
+		printAllLatLines( pd, lat, thermal, temp, NBELTS, x, y );
+		//printAllLatLines( pd, lat, thermal, temp, NPTS, x, y );
 
 	        if ( pushed & kButtonA ) {
 			state = paused;
