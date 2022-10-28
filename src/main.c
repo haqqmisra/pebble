@@ -78,7 +78,7 @@ static int update( void* userdata )
 	}
 	else if ( state == running ) {
 
-		for ( m = 0; m < 366; m++ ) {
+		for ( m = 0; m < 30; m++ ) {
 			updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
 			tmean = updateMeanTemp( temp, area, niter, NPTS, tmean );
 			niter++;
@@ -91,8 +91,6 @@ static int update( void* userdata )
 
 		printFloat( pd, x+150, y-40, tmean );
 		printFloat( pd, x+150, y-20, niter );
-
-		pd->system->drawFPS( x+150, y+40 );
 
 	        if ( pushed & kButtonA ) {
 			state = paused;

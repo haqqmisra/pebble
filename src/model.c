@@ -65,7 +65,7 @@ float getAlbedo( float temp )
 {
 	float albedo;
 	float aland = 0.25;
-	float aice = 0.66;
+	float aice = 0.67;
 
 	if ( temp > TFREEZE ) {
 		albedo = aland;
@@ -111,7 +111,8 @@ float getSolcon( float lat, float dt, int niter )
 
 float nextStep( float temp, float dt, int niter, float lat, float thermal )
 {
-	float cp     = 5.25e6;	// J m^-2 degC^-1
+	//float cp     = 5.25e6;	// J m^-2 degC^-1
+	float cp     = 2.1e8;	// J m^-2 degC^-1
 	float ir, alb, solcon, dtemp, dum, dum2;
 
 	ir     = getInfrared( temp );
@@ -121,7 +122,6 @@ float nextStep( float temp, float dt, int niter, float lat, float thermal )
 	dum = dt / cp;
 
 	dtemp = ( ( 1 - alb ) * solcon - ir + thermal ) * dum;
-	//dtemp = ( ( 1 - alb ) * solcon - ir ) * dum;
 
 	return dtemp;
 }
