@@ -49,7 +49,7 @@ int flag = 0;
 enum Status { initializing, running, paused, crashed };
 enum Status state = initializing;
 
-float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS];
+float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS];
 float dt = 8.64e4;	// seconds
 int niter = 0;
 
@@ -67,7 +67,7 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, x, y );
 
-		init( temp, lat, xlat, dxlat, NPTS, NBELTS, 273.0 );
+		init( temp, lat, xlat, dxlat, diff, NPTS, NBELTS, 273.0 );
 
 		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
 
@@ -85,7 +85,7 @@ static int update( void* userdata )
 	}
 	else if ( state == running ) {
 
-		updateAllLat( temp, dt, niter, NPTS, thermal, lat, xlat, dxlat );
+		updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
 		niter++;
 
 		printAllLatLines( pd, lat, thermal, temp, NBELTS, x, y );

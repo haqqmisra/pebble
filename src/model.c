@@ -2,9 +2,10 @@
 
 #define TFREEZE 0.0	// degC
 
-void init( float *temp, float *lat, float *xlat, float *dxlat, int npts, int nbelts, float tempinit )
+void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, int npts, int nbelts, float tempinit )
 {
 	int i;
+	float d0 = 0.58;
 
 	lat[0]          = -M_PI / 2;
 	lat[npts-1]     = M_PI / 2;
@@ -21,16 +22,15 @@ void init( float *temp, float *lat, float *xlat, float *dxlat, int npts, int nbe
 	}
 	for ( i = 0; i < npts; ++i ) {
 		temp[i] = tempinit;
+		diff[i] = d0;
 	}
 	return;
 }
 
-void diff( float temp[], float xlat[], float dxlat[], float *thermal, int npts )
+void updateDiffusion( float temp[], float xlat[], float dxlat[], float diff[], float *thermal, int npts )
 {
-	//float tprime[npts-1], dprime[npts-1];
-	float tprime, t2prime, dprime, dum1, dum2, dum3, dum4;
+	float tprime, t2prime, dprime, xpow2, dum1, dum2, dum3, dum4;
 	int i;
-	float diff = 0.58;
 
 	for ( i = 1; i < npts - 1; i++ ) {
 		tprime = ( temp[i+1] - temp[i-1] ) / ( dxlat[i] + dxlat[i-1] );
@@ -39,11 +39,12 @@ void diff( float temp[], float xlat[], float dxlat[], float *thermal, int npts )
 		dum2    = powf( dxlat[i], 2 ) / 2 + powf( dxlat[i-1], 2 ) / 2;
 		t2prime = dum1 / dum2;
 
-		dprime = 0;
+		dprime = ( diff[i+1] - diff[i-1] ) / ( dxlat[i] + dxlat[i-1] );
 
-		dum3         = ( 1 - powf( xlat[i], 2 ) ) * t2prime;
-		dum4         = -2 * xlat[i] * tprime;
-		thermal[i]   = diff * ( dum3 + dum4 );
+		xpow2      = ( 1 - powf( xlat[i], 2 ) );
+		dum3       = xpow2 * t2prime * diff[i];
+		dum4       = xpow2 * dprime - 2 * xlat[i] * diff[i];
+		thermal[i] = dum3 + tprime * dum4;
 	}
 	return;
 }
@@ -124,11 +125,11 @@ float nextStep( float temp, float dt, int niter, float lat, float thermal )
 	return dtemp;
 }
 
-void updateAllLat( float *temp, float dt, int niter, int npts, float *thermal, float lat[], float xlat[], float dxlat[] )
+void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], float *thermal, float lat[], float xlat[], float dxlat[] )
 {
 	int i;
 
-	diff( temp, xlat, dxlat, thermal, npts );
+	updateDiffusion( temp, xlat, dxlat, diff, thermal, npts );
 
 	for ( i = 1; i < npts - 1; i++ ) {
 		temp[i] = temp[i] + nextStep( temp[i], dt, niter, lat[i], thermal[i] );
