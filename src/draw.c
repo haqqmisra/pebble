@@ -53,14 +53,11 @@ void printAllLatLines( PlaydateAPI* pd, float lat[], float xlat[], float temp[],
 	return;
 }
 
-void printRuntime( PlaydateAPI* pd, int x, int y )
+void printFloat( PlaydateAPI* pd, int x, int y, float flt )
 {
-	char out[144], f1[144], f2[144], f3[144];
-	float runtime = pd->system->getElapsedTime();
+	char out[144];
 
-	float_to_string( runtime, out );
-
+	float_to_string( flt, out );
 	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
-
 	return;
 }

@@ -41,14 +41,14 @@ int dy = 2;
 
 
 
-char out[144], out1[144];
-int flag = 0;
+int m;
 
 
 enum Status { initializing, running, paused, crashed };
 enum Status state = initializing;
 
-float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS];
+float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
+float tmean;
 float dt = 8.64e4;	// seconds
 int niter = 0;
 
@@ -68,7 +68,7 @@ static int update( void* userdata )
 
 		pd->system->resetElapsedTime();
 
-		init( temp, lat, xlat, dxlat, diff, NPTS, NBELTS, 273.0 );
+		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, 273.0 );
 
 		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
 
@@ -78,13 +78,19 @@ static int update( void* userdata )
 	}
 	else if ( state == running ) {
 
-		updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
-		niter++;
+		for ( m = 0; m < 366; m++ ) {
+			updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
+			tmean = updateMeanTemp( temp, area, niter, NPTS, tmean );
+			niter++;
+		}
 
 		printAllLatLines( pd, lat, thermal, temp, NBELTS, x, y );
 		//printAllLatLines( pd, lat, thermal, temp, NPTS, x, y );
 
-		printRuntime( pd, x+150, y );
+		printFloat( pd, x+150, y, pd->system->getElapsedTime() );
+
+		printFloat( pd, x+150, y-40, tmean );
+		printFloat( pd, x+150, y-20, niter );
 
 		pd->system->drawFPS( x+150, y+40 );
 

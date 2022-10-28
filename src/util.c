@@ -10,107 +10,7 @@ float deg2rad( float nrad )
 }
 
 
-
-// Convert INT to CHAR string with ITOA()
-
-void strrev(char *arr, int start, int end)
-{
-    char temp;
-
-    if (start >= end)
-        return;
-
-    temp = *(arr + start);
-    *(arr + start) = *(arr + end);
-    *(arr + end) = temp;
-
-    start++;
-    end--;
-    strrev(arr, start, end);
-}
-
-char *itoa(int number, char *arr, int base)
-{
-    int i = 0, r, negative = 0;
-
-    if (number == 0)
-    {
-        arr[i] = '0';
-        arr[i + 1] = '\0';
-        return arr;
-    }
-    if (number < 0 && base == 10)
-    {
-        number *= -1;
-        negative = 1;
-    }
-    while (number != 0)
-    {
-        r = number % base;
-        arr[i] = (r > 9) ? (r - 10) + 'a' : r + '0';
-        i++;
-        number /= base;
-    }
-    if (negative)
-    {
-        arr[i] = '-';
-        i++;
-    }
-    strrev(arr, 0, i - 1);
-    arr[i] = '\0';
-    return arr;
-}
-
-
-// Convert FLOAT to CHAR string with FTOA()
-
-void reverse(char* str, int len)
-{
-    int i = 0, j = len - 1, temp;
-    while (i < j) {
-        temp = str[i];
-        str[i] = str[j];
-        str[j] = temp;
-        i++;
-        j--;
-    }
-}
-
-int intToStr(int x, char str[], int d)
-{
-    int i = 0;
-    while (x) {
-        str[i++] = (x % 10) + '0';
-        x = x / 10;
-    }
-    while (i < d) {
-        str[i++] = '0';
-    }
-    reverse(str, i);
-    str[i] = '\0';
-    return i;
-}
-
-void ftoa(float n, char* res, int afterpoint)
-{
-    int ipart = (int)n;
-    float fpart = n - (float)ipart;
-    int i = intToStr(ipart, res, 0);
-    if (afterpoint != 0) {
-        res[i] = '.';
-        fpart = fpart * pow(10, afterpoint);
-        intToStr((int)fpart, res + i + 1, afterpoint);
-    }
-}
-
-
-
-
-
-
-
-
-
+/*** Convert float to string ***/
 
 int n_tu(int number, int count)
 {
@@ -121,7 +21,6 @@ int n_tu(int number, int count)
     return result;
 }
 
-/*** Convert float to string ***/
 void float_to_string(float f, char r[])
 {
     long long int length, length2, i, number, position, sign;

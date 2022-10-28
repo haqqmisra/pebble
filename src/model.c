@@ -2,7 +2,7 @@
 
 #define TFREEZE 0.0	// degC
 
-void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, int npts, int nbelts, float tempinit )
+void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, float *area, int npts, int nbelts, float tempinit )
 {
 	int i;
 	float d0 = 0.58;
@@ -14,8 +14,9 @@ void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, int 
 
 	for ( i = 1; i < npts - 1; ++i ) {
 		//lat[i]  = lat[0] + i * M_PI / ( size - 2 );
-		lat[i]     = lat[0] + ( 1 + 2 * ( i - 1 ) ) * M_PI / ( 2 * nbelts );
-		xlat[i]    = sinf( lat[i] );
+		lat[i]  = lat[0] + ( 1 + 2 * ( i - 1 ) ) * M_PI / ( 2 * nbelts );
+		xlat[i] = sinf( lat[i] );
+		area[i] = fabsf( sinf( lat[i] + M_PI / ( 2 * nbelts ) ) - sinf( lat[i] - M_PI / ( 2 * nbelts ) ) ) / 2;
 	}
 	for ( i = 0; i < npts - 1; ++i ) {
 		dxlat[i] = fabsf( xlat[i+1] - xlat[i] );
@@ -63,8 +64,8 @@ float getInfrared( float temp )
 float getAlbedo( float temp )
 {
 	float albedo;
-	float aland = 0.3;
-	float aice = 0.7;
+	float aland = 0.25;
+	float aice = 0.66;
 
 	if ( temp > TFREEZE ) {
 		albedo = aland;
@@ -76,7 +77,7 @@ float getAlbedo( float temp )
 
 float getSolcon( float lat, float dt, int niter )
 {
-	float obliquity = 0.0;
+	float obliquity = 23.5;
 	float solcon = 1360;	// W m^-2
 
 	float halfday, mumean, solar;
@@ -139,3 +140,26 @@ void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], flo
 
 	return;
 }
+
+float getMeanTemp( float temp[], float area[], int npts )
+{
+	int i;
+	int tempsum = 0;
+
+	for ( i = 1; i < npts - 1; i++ ) {
+		tempsum += temp[i] * area[i];
+	}
+	return tempsum;
+}
+
+float updateMeanTemp( float temp[], float area[], int niter, int npts, float tmean )
+{
+	float told, tnew;
+
+	told = tmean * niter;
+	tnew = getMeanTemp( temp, area, npts );
+
+	tmean = ( told + tnew ) / ( niter + 1 );
+	return tmean;
+}
+
