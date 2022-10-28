@@ -6,6 +6,7 @@
 
 void printLatLine( PlaydateAPI* pd, float lat, float xlat, float temp, int x, int y );
 void printAllLatLines( PlaydateAPI* pd, float lat[], float xlat[], float temp[], int size, int x, int y );
+void printRuntime( PlaydateAPI* pd, int x, int y );
 
 #endif
 

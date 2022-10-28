@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <float.h>
 
 #include "pd_api.h"
 #include "model.h"
@@ -67,17 +66,11 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, x, y );
 
+		pd->system->resetElapsedTime();
+
 		init( temp, lat, xlat, dxlat, diff, NPTS, NBELTS, 273.0 );
 
 		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
-
-		//if ( flag == 0 ) {
-		//	float_to_string( FLT_MAX, out1 );
-		//	strcpy( out, "Float max: " );
-		//	strcat( out, out1 );
-		//	pd->system->logToConsole( out );
-		//	flag = 1;
-		//}
 
 	        if ( pushed & kButtonA ) {
 			state = running;
@@ -90,6 +83,10 @@ static int update( void* userdata )
 
 		printAllLatLines( pd, lat, thermal, temp, NBELTS, x, y );
 		//printAllLatLines( pd, lat, thermal, temp, NPTS, x, y );
+
+		printRuntime( pd, x+150, y );
+
+		pd->system->drawFPS( x+150, y+40 );
 
 	        if ( pushed & kButtonA ) {
 			state = paused;

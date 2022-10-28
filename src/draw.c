@@ -30,7 +30,7 @@ void printLatLine( PlaydateAPI* pd, float lat, float xlat, float temp, int x, in
 
 	strcat( out, f1 );
 	strcat( out, " " );
-	strcat( out, f2 );
+	//strcat( out, f2 );
 	strcat( out, " " );
 	strcat( out, f3 );
 
@@ -50,5 +50,17 @@ void printAllLatLines( PlaydateAPI* pd, float lat[], float xlat[], float temp[],
 	for ( i = size; i > 0; i-- ) {
 		printLatLine( pd, lat[i], xlat[i], temp[i], xtop, ytop - i*dy );
 	}
+	return;
+}
+
+void printRuntime( PlaydateAPI* pd, int x, int y )
+{
+	char out[144], f1[144], f2[144], f3[144];
+	float runtime = pd->system->getElapsedTime();
+
+	float_to_string( runtime, out );
+
+	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
+
 	return;
 }
