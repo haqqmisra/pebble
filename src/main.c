@@ -28,35 +28,36 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 	return 0;
 }
 
+#define STEPS_PER_UPDATE 30
 #define NBELTS 18
 #define NPTS NBELTS+2
 
-#define TEXT_WIDTH 86
-#define TEXT_HEIGHT 16
+#define SCREEN_WIDTH 400
+#define SCREEN_HEIGHT 240
 
-int x = (400-TEXT_WIDTH)/4;
-int y = (240-TEXT_HEIGHT)/2;
-int dx = 1;
-int dy = 2;
-
-
-
-int m;
-
+struct Plot plot1, plot2;
 
 enum Status { initializing, running, paused, crashed };
 enum Status state = initializing;
 
+enum Display { annual, daily, configure };
+enum Display screen = configure;
+
 float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
+float tmeanglobal[NPTS];
 float tmean;
+float pstart, pend, pausedtime, runtime;
+
 float dt = 8.64e4;	// seconds
 int niter = 0;
+int year = 1;
+int i, m;
 
 static int update( void* userdata )
 {
 	PlaydateAPI* pd = userdata;
 
-	pd->display->setInverted( 1 );
+	//pd->display->setInverted( 1 );
 	pd->graphics->clear( kColorWhite );
 	pd->graphics->setFont( font );
 
@@ -64,51 +65,105 @@ static int update( void* userdata )
         pd->system->getButtonState( NULL, &pushed, NULL );
 
         if ( state == initializing ) {
-		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, x, y );
+		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, 80, 50 );
 
 		pd->system->resetElapsedTime();
+		pausedtime = 0;
 
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, 273.0 );
+		tmean = 0;
+		for ( i = 0; i < NPTS; i++ ) {
+			tmeanglobal[i]    = temp[i];
+		}
 
-		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, x, y+20 );
+		createPlot( &plot1, 120, 20, 270, 90 );
+		createPlot( &plot2, 120, 20 + 90 + 20, 270, 90 );
+
+		strcpy( plot1.xlabels[0], "NP" );
+		strcpy( plot1.xlabels[1], "60N" );
+		strcpy( plot1.xlabels[2], "30N" );
+		strcpy( plot1.xlabels[3], "EQ" );
+		strcpy( plot1.xlabels[4], "30S" );
+		strcpy( plot1.xlabels[5], "60S" );
+		strcpy( plot1.xlabels[6], "SP" );
+
+		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, 80, 50+20 );
 
 	        if ( pushed & kButtonA ) {
-			state = running;
+			state  = running;
+			screen = annual;
 		}
 	}
 	else if ( state == running ) {
 
-		for ( m = 0; m < 30; m++ ) {
+		for ( m = 0; m < STEPS_PER_UPDATE; m++ ) {
 			updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
-			tmean = updateMeanTemp( temp, area, niter, NPTS, tmean );
+			tmean = updateMeanTemp( temp, area, niter, NPTS, tmean, tmeanglobal );
 			niter++;
 		}
 
-		printAllLatLines( pd, lat, thermal, temp, NBELTS, x, y );
-		//printAllLatLines( pd, lat, thermal, temp, NPTS, x, y );
+		if ( year < callYear( 0 ) ) {
+			year++;
+		}
 
-		printFloat( pd, x+150, y, pd->system->getElapsedTime() );
-
-		printFloat( pd, x+150, y-40, tmean );
-		printFloat( pd, x+150, y-20, niter );
+		runtime = pd->system->getElapsedTime() - pausedtime;
 
 	        if ( pushed & kButtonA ) {
 			state = paused;
+			pstart = pd->system->getElapsedTime() - pausedtime;
 		}
 	}
 	else if ( state == paused ) {
+
+		runtime = pstart;
+
 	        if ( pushed & kButtonA ) {
 			state = running;
+			pend  = pd->system->getElapsedTime() - pausedtime;
+			pausedtime = pausedtime + ( pend - pstart );
 		}
 	}
 	else if ( state == crashed ) {
-		pd->system->error( "Halting: model crashed" );
+		pd->system->error( "Error: model crashed" );
 	}
 	else {
-		pd->system->error( "Halting: non-existent state reached" );
+		pd->system->error( "Error: non-existent state reached" );
 	}
 
-	pd->system->drawFPS( 0, 0 );
+
+	if ( screen == annual ) {
+
+		drawPlot( pd, plot1 );
+		drawPlot( pd, plot2 );
+
+		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
+		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
+		printAllLatLines( pd, lat, tmeanglobal, NBELTS, 2, SCREEN_HEIGHT );
+
+		pd->graphics->drawText( "avg =", strlen( "avg =" ), kASCIIEncoding, 75, 3 );
+		printFloat( pd, 120, 3, tmean, 1 );
+		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 162, 3 );
+
+		pd->graphics->drawText( "year =", strlen( "year =" ), kASCIIEncoding, 195, 3 );
+		printInt( pd, 250, 3, callYear(0), 2 );
+
+		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 295, 3 );
+		printFloat( pd, 345, 3, runtime, 1 );
+
+	}
+	else if ( screen == daily ) {
+
+	}
+	else if ( screen == configure ) {
+
+	}
+	else {
+		pd->system->error( "Error: non-existent screen reached" );
+	}
+
+
+
+	//pd->system->drawFPS( SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10 );
 
 	return 1;
 }

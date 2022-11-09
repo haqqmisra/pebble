@@ -4,8 +4,11 @@
 #include <math.h>
 
 float deg2rad( float nrad );
-int n_tu(int number, int count);
-void float_to_string(float f, char r[]);
+float newPrecision( float n, float i );
+int n_tu( int number, int count );
+void float_to_string( float f, char r[] );
+void strrev( char *arr, int start, int end );
+char *int_to_string( int number, char *arr, int base );
 
 #endif
 

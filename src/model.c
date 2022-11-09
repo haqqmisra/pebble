@@ -2,10 +2,13 @@
 
 #define TFREEZE 0.0	// degC
 
+enum yearquery { initialize, print, add };
+
+
 void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, float *area, int npts, int nbelts, float tempinit )
 {
 	int i;
-	float d0 = 0.58;
+	float d0 = 0.38;
 
 	lat[0]          = -M_PI / 2;
 	lat[npts-1]     = M_PI / 2;
@@ -25,6 +28,9 @@ void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, floa
 		temp[i] = tempinit;
 		diff[i] = d0;
 	}
+
+	callYear( -1 );
+
 	return;
 }
 
@@ -64,8 +70,8 @@ float getInfrared( float temp )
 float getAlbedo( float temp )
 {
 	float albedo;
-	float aland = 0.25;
-	float aice = 0.67;
+	float aland = 0.28;
+	float aice = 0.7;
 
 	if ( temp > TFREEZE ) {
 		albedo = aland;
@@ -75,12 +81,13 @@ float getAlbedo( float temp )
 	return albedo;
 }
 
-float getSolcon( float lat, float dt, int niter )
+float updateDeclination( float dt, int niter )
 {
-	float obliquity = 23.5;
-	float solcon = 1360;	// W m^-2
 
-	float halfday, mumean, solar;
+	static float oldwt;
+
+	float obliquity = 23.5;
+	float dec;
 
 	float nsec   = dt * niter;
 	float bigG   = 6.67e-11;
@@ -88,9 +95,27 @@ float getSolcon( float lat, float dt, int niter )
 	float Rorbit = 1.496e11;
 	float wvel   = sqrtf( ( bigG * msun ) / powf( Rorbit, 3 ) );
 	float wt     = wvel * nsec;
-	wt     = fmodf( wt, 2 * M_PI );
-	float dec    = asinf( -sinf( deg2rad( obliquity ) ) * cosf( wt + M_PI / 2 ) );
-	float harg   = tanf( dec ) * tanf( lat );
+	wt           = fmodf( wt, 2 * M_PI );
+
+	if ( niter == 0 ) {
+		oldwt = wt;
+	}
+	if ( wt <= oldwt ) {
+		callYear( 1 );
+	}
+	oldwt = wt;
+
+	dec    = asinf( -sinf( deg2rad( obliquity ) ) * cosf( wt + M_PI / 2 ) );
+
+	return dec;
+}
+
+float getSolcon( float lat, float dec )
+{
+	float solcon = 1360;	// W m^-2
+
+	float halfday, mumean, solar;
+	float harg = tanf( dec ) * tanf( lat );
 
 	if ( harg >= 1 ) {
 		halfday = M_PI;
@@ -109,7 +134,7 @@ float getSolcon( float lat, float dt, int niter )
 }
 
 
-float nextStep( float temp, float dt, int niter, float lat, float thermal )
+float nextStep( float temp, float lat, float dec, float thermal, float dt )
 {
 	//float cp     = 5.25e6;	// J m^-2 degC^-1
 	float cp     = 2.1e8;	// J m^-2 degC^-1
@@ -117,7 +142,7 @@ float nextStep( float temp, float dt, int niter, float lat, float thermal )
 
 	ir     = getInfrared( temp );
 	alb    = getAlbedo( temp );
-	solcon = getSolcon( lat, dt, niter );
+	solcon = getSolcon( lat, dec );
 
 	dum = dt / cp;
 
@@ -128,12 +153,14 @@ float nextStep( float temp, float dt, int niter, float lat, float thermal )
 
 void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], float *thermal, float lat[], float xlat[], float dxlat[] )
 {
-	int i;
+	int i, dec;
+
+	dec = updateDeclination( dt, niter );
 
 	updateDiffusion( temp, xlat, dxlat, diff, thermal, npts );
 
 	for ( i = 1; i < npts - 1; i++ ) {
-		temp[i] = temp[i] + nextStep( temp[i], dt, niter, lat[i], thermal[i] );
+		temp[i] = temp[i] + nextStep( temp[i], lat[i], dec, thermal[i], dt );
 	}
 	temp[0]      = temp[1];
 	temp[npts-1] = temp[npts-2];
@@ -142,7 +169,7 @@ void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], flo
 }
 
 float getMeanTemp( float temp[], float area[], int npts )
-{
+ {
 	int i;
 	int tempsum = 0;
 
@@ -152,14 +179,39 @@ float getMeanTemp( float temp[], float area[], int npts )
 	return tempsum;
 }
 
-float updateMeanTemp( float temp[], float area[], int niter, int npts, float tmean )
+float updateMeanTemp( float temp[], float area[], int niter, int npts, float tmean, float *tmeanglobal )
 {
+	int i;
 	float told, tnew;
 
-	told = tmean * niter;
-	tnew = getMeanTemp( temp, area, npts );
-
+	told  = tmean * niter;
+	tnew  = getMeanTemp( temp, area, npts );
 	tmean = ( told + tnew ) / ( niter + 1 );
+	tmean = newPrecision( tmean, 3 );
+
+	for ( i = 1; i < npts - 1; i++ ) {
+		told = tmeanglobal[i] * niter;
+		tnew = temp[i];
+		tmeanglobal[i] = ( told + tnew ) / ( niter + 1 );
+		tmeanglobal[i] = newPrecision( tmeanglobal[i], 3 );
+	}
 	return tmean;
 }
+
+int callYear( int query )
+{
+	static int yearcount;
+
+	if ( query == -1  ) {
+		yearcount = 0;
+	}
+	else if ( query == 1 ) {
+		yearcount++;
+	}
+	return yearcount;
+}
+
+
+
+
 
