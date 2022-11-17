@@ -13,7 +13,10 @@ float getSolcon( float lat, float dec );
 float nextStep( float temp, float lat, float dec, float thermal, float dt );
 void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], float *thermal, float lat[], float xlat[], float dxlat[] );
 float getMeanTemp( float temp[], float area[], int npts );
-float updateMeanTemp( float temp[], float area[], int niter, int npts, float tmean, float *tmeanglobal );
 int callYear( int query );
+float* callTempLatSum( int query, float newtemp[] );
+void annualMeanTempLat( float temp[], int niter, int npts, float *tmeanlat );
+
+static float wvel;
 
 #endif

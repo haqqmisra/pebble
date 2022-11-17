@@ -1,6 +1,5 @@
 #include "model.h"
-
-#define TFREEZE 0.0	// degC
+#include "constants.h"
 
 enum yearquery { initialize, print, add };
 
@@ -8,12 +7,11 @@ enum yearquery { initialize, print, add };
 void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, float *area, int npts, int nbelts, float tempinit )
 {
 	int i;
-	float d0 = 0.38;
 
-	lat[0]          = -M_PI / 2;
-	lat[npts-1]     = M_PI / 2;
-	xlat[0]         = sinf( lat[0] );
-	xlat[npts-1]    = sinf( lat[npts-1] );
+	lat[0]       = -M_PI / 2;
+	lat[npts-1]  = M_PI / 2;
+	xlat[0]      = sinf( lat[0] );
+	xlat[npts-1] = sinf( lat[npts-1] );
 
 	for ( i = 1; i < npts - 1; ++i ) {
 		//lat[i]  = lat[0] + i * M_PI / ( size - 2 );
@@ -26,8 +24,10 @@ void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, floa
 	}
 	for ( i = 0; i < npts; ++i ) {
 		temp[i] = tempinit;
-		diff[i] = d0;
+		diff[i] = D0;
 	}
+
+	wvel = sqrtf( ( BIG_G * MSTAR ) / powf( RORBIT, 3 ) );
 
 	callYear( -1 );
 
@@ -59,24 +59,20 @@ void updateDiffusion( float temp[], float xlat[], float dxlat[], float diff[], f
 float getInfrared( float temp )
 {
 	float irad;
-	float Arad = 203.0;	// W m^-2
-	float Brad = 2.0;	// W m^-2 degC^-1
-	float KtoC = 273.16;
 
-	irad = Arad + Brad * ( temp - KtoC );
+	irad = ARAD + BRAD * ( temp - TFREEZE );
 	return irad;
 }
 
 float getAlbedo( float temp )
 {
 	float albedo;
-	float aland = 0.28;
-	float aice = 0.7;
 
-	if ( temp > TFREEZE ) {
-		albedo = aland;
-	} else {
-		albedo = aice;
+	if ( temp >= TFREEZE ) {
+		albedo = ALAND;
+	}
+	else {
+		albedo = AICE;
 	}
 	return albedo;
 }
@@ -85,17 +81,11 @@ float updateDeclination( float dt, int niter )
 {
 
 	static float oldwt;
-
-	float obliquity = 23.5;
 	float dec;
 
-	float nsec   = dt * niter;
-	float bigG   = 6.67e-11;
-	float msun   = 2.e30;
-	float Rorbit = 1.496e11;
-	float wvel   = sqrtf( ( bigG * msun ) / powf( Rorbit, 3 ) );
-	float wt     = wvel * nsec;
-	wt           = fmodf( wt, 2 * M_PI );
+	float nsec = dt * niter;
+	float wt   = wvel * nsec;
+	wt         = fmodf( wt, 2 * M_PI );
 
 	if ( niter == 0 ) {
 		oldwt = wt;
@@ -105,15 +95,12 @@ float updateDeclination( float dt, int niter )
 	}
 	oldwt = wt;
 
-	dec    = asinf( -sinf( deg2rad( obliquity ) ) * cosf( wt + M_PI / 2 ) );
-
+	dec = asinf( -sinf( deg2rad( OBLIQUITY ) ) * cosf( wt + M_PI / 2 ) );
 	return dec;
 }
 
 float getSolcon( float lat, float dec )
 {
-	float solcon = 1360;	// W m^-2
-
 	float halfday, mumean, solar;
 	float harg = tanf( dec ) * tanf( lat );
 
@@ -128,7 +115,7 @@ float getSolcon( float lat, float dec )
 	}
 
 	mumean = halfday * sinf( lat ) * sinf( dec ) + cosf( lat ) * cosf( dec ) * sinf( halfday );
-	solar  = ( solcon / M_PI ) * mumean;
+	solar  = ( S0 / M_PI ) * mumean;
 
 	return solar;
 }
@@ -136,15 +123,13 @@ float getSolcon( float lat, float dec )
 
 float nextStep( float temp, float lat, float dec, float thermal, float dt )
 {
-	//float cp     = 5.25e6;	// J m^-2 degC^-1
-	float cp     = 2.1e8;	// J m^-2 degC^-1
 	float ir, alb, solcon, dtemp, dum, dum2;
 
 	ir     = getInfrared( temp );
 	alb    = getAlbedo( temp );
 	solcon = getSolcon( lat, dec );
 
-	dum = dt / cp;
+	dum = dt / CP;
 
 	dtemp = ( ( 1 - alb ) * solcon - ir + thermal ) * dum;
 
@@ -179,30 +164,11 @@ float getMeanTemp( float temp[], float area[], int npts )
 	return tempsum;
 }
 
-float updateMeanTemp( float temp[], float area[], int niter, int npts, float tmean, float *tmeanglobal )
-{
-	int i;
-	float told, tnew;
-
-	told  = tmean * niter;
-	tnew  = getMeanTemp( temp, area, npts );
-	tmean = ( told + tnew ) / ( niter + 1 );
-	tmean = newPrecision( tmean, 3 );
-
-	for ( i = 1; i < npts - 1; i++ ) {
-		told = tmeanglobal[i] * niter;
-		tnew = temp[i];
-		tmeanglobal[i] = ( told + tnew ) / ( niter + 1 );
-		tmeanglobal[i] = newPrecision( tmeanglobal[i], 3 );
-	}
-	return tmean;
-}
-
 int callYear( int query )
 {
 	static int yearcount;
 
-	if ( query == -1  ) {
+	if ( query == -1 ) {
 		yearcount = 0;
 	}
 	else if ( query == 1 ) {
@@ -211,7 +177,36 @@ int callYear( int query )
 	return yearcount;
 }
 
+float* callTempLatSum( int query, float newtemp[] )
+{
+	static float templatsum[NPTS];
+	int i;
 
+        if ( query == -1 ) {
+		for ( i = 0; i < NPTS; i++ ) {
+			templatsum[i] = 0;
+		}
+        }
+	else if ( query == 1 ) {
+		for ( i = 0; i < NPTS; i++ ) {
+			templatsum[i] += newtemp[i];
+		}
+	}
+	return templatsum;
+}
+
+void annualMeanTempLat( float temp[], int niter, int npts, float *tmeanlat )
+{
+	float *tlatsum;
+	int i;
+
+	tlatsum = callTempLatSum( 1, temp );
+
+	for ( i = 0; i < npts; i++ ) {
+		tmeanlat[i] = tlatsum[i] / niter;
+	}
+	return;
+}
 
 
 
