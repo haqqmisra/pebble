@@ -17,6 +17,8 @@ int callYear( int query );
 float* callTempLatSum( int query, float newtemp[] );
 void annualMeanTempLat( float temp[], int niter, int npts, float *tmeanlat );
 
+enum yearquery { initialize, print, add };
+
 static float wvel;
 
 #endif

@@ -5,6 +5,7 @@
 #include "model.h"
 #include "util.h"
 #include "draw.h"
+#include "io.h"
 #include "constants.h"
 
 static int update(void* userdata);
@@ -23,6 +24,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		if ( font == NULL )
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
 
+		pd->system->setAutoLockDisabled( 1 );
 		pd->system->setUpdateCallback( update, pd );
 	}
 
@@ -40,15 +42,28 @@ enum Display screen = configure;
 float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
 float latdeg[NPTS];
 
-float tmeanlast;
-float tmeanlat[NPTS], tmeanlatlast[NPTS];
+float tmeanlat[NPTS];
+float tmeantime[NYEARS+1];
+float tmeanlattime[NYEARS+1][NPTS];
+float tmeandaily[NITERMAX];
+float *tprint;
+float *tlatprint;
 float pstart, pend, pausedtime, runtime;
 
-float dt   = 8.64e4;	// seconds
 int niter  = 0;
-int year;
+int year, yearprint, tind;
 int yriter = 0;
+int steps;
 int i, m;
+
+float yearaxis[NYEARS];
+char xaxislabel1[NUMXTICKS+1][STRLEN] = { "SP", "60S", "30S", "EQ", "30N", "60N", "NP" };
+char xaxislabel2[NUMXTICKS+1][STRLEN];
+char yaxislabel1[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
+char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
+
+char status1[STRLEN], status2[STRLEN];
+char batterylife[STRLEN];
 
 static int update( void* userdata )
 {
@@ -60,71 +75,90 @@ static int update( void* userdata )
         PDButtons pushed;
         pd->system->getButtonState( NULL, &pushed, NULL );
 
+	float crankchange = 0;
+        if ( pd->system->isCrankDocked() == 0 ) {
+		crankchange = pd->system->getCrankChange();
+	}
+
         if ( state == initializing ) {
-		pd->graphics->drawText( "Initializing...", strlen( "Initializing..." ), kASCIIEncoding, 80, 50 );
+		strcpy( status1, "Initializing" );
 
 		pd->system->resetElapsedTime();
 		pausedtime = 0;
 
-		year = callYear( -1 );
+		steps = STEPS_PER_UPDATE;
+		year  = callYear( -1 );
 		callTempLatSum( -1, 0 );
 
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
-		tmeanlast = TINIT;
 		for ( i = 0; i < NPTS; i++ ) {
 			latdeg[i]       = deg2rad( lat[i] );
-			tmeanlatlast[i] = TINIT;
+			tmeanlattime[0][i] = TINIT;
+		}
+		for ( i = 0; i < NYEARS + 1; i++ ) {
+			yearaxis[i] = i;
+			tmeantime[i] = IGNORE;
+		}
+		tmeantime[0]  = TINIT;
+		tmeandaily[0] = TINIT;
+
+		createPlot( &plot1, PLOTX, PLOTY, PLOTWIDTH, PLOTHEIGHT );
+		setXlimits( &plot1, -90, 90 );
+		setYlimits( &plot1, TFREEZE - 40, TFREEZE + 40 );
+		addXAxisLabels( &plot1, xaxislabel1, NUMXTICKS + 1 );
+		addYAxisLabels( &plot1, yaxislabel1, NUMYTICKS + 1 );
+
+		createPlot( &plot2, PLOTX, PLOTY + PLOTDY, PLOTWIDTH, PLOTHEIGHT );
+		setXlimits( &plot2, 0, NYEARS );
+		setYlimits( &plot2, TFREEZE - 40, TFREEZE + 40 );
+
+		for ( i = 0; i < NUMXTICKS + 1; i++ ) {
+			if ( NYEARS < NUMXTICKS ) {
+				float_to_string( i * (float)NYEARS / NUMXTICKS, xaxislabel2[i] );
+			}
+			else {
+				int_to_string( (int)floorf( i * NYEARS / NUMXTICKS ), xaxislabel2[i], 10 );
+			}
 		}
 
-		createPlot( &plot1, 120, 20, 270, 90 );
-		setXlimits( &plot1, -90, 90 );
-		//setYlimits( &plot1, -50, 50 );
-		setYlimits( &plot1, TFREEZE - 40, TFREEZE + 40 );
-		strcpy( plot1.xlabels[0], "SP" );
-		strcpy( plot1.xlabels[1], "60S" );
-		strcpy( plot1.xlabels[2], "30S" );
-		strcpy( plot1.xlabels[3], "EQ" );
-		strcpy( plot1.xlabels[4], "30N" );
-		strcpy( plot1.xlabels[5], "60N" );
-		strcpy( plot1.xlabels[6], "NP" );
-		strcpy( plot1.ylabels[0], "" );
-		strcpy( plot1.ylabels[1], "+20" );
-		strcpy( plot1.ylabels[2], "FRZ" );
-		strcpy( plot1.ylabels[3], "-20" );
-		strcpy( plot1.ylabels[4], "" );
 
-		createPlot( &plot2, 120, 20 + 90 + 20, 270, 90 );
-
-		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, 80, 50+20 );
+		addXAxisLabels( &plot2, xaxislabel2, NUMXTICKS + 1 );
+		addYAxisLabels( &plot2, yaxislabel2, NUMYTICKS + 1 );
 
 	        if ( pushed & kButtonA ) {
 			state  = running;
 			screen = annual;
+			strcpy( status2, "Annual" );
 		}
 	}
 	else if ( state == running ) {
+		strcpy( status1, "Running (A to Pause)" );
 
 		// model driver loop
-		for ( m = 0; m < STEPS_PER_UPDATE; m++ ) {
+		for ( m = 0; m < steps; m++ ) {
 			niter++;
 			yriter++;
 
-			updateAllLat( temp, dt, niter, NPTS, diff, thermal, lat, xlat, dxlat );
+			updateAllLat( temp, DT, niter, NPTS, diff, thermal, lat, xlat, dxlat );
+
+			tmeandaily[niter] = getMeanTemp( temp, area, NPTS );
 
 			annualMeanTempLat( temp, yriter, NPTS, tmeanlat );
+
+			if ( year < callYear( 0 ) ) {
+				year      = callYear( 0 );
+				yearprint = year;
+				yriter = 0;
+				for ( i = 0; i < NPTS; i++ ) {
+					tmeanlattime[year][i] = tmeanlat[i];
+				}
+				callTempLatSum( -1, 0 );
+				tmeantime[year] = getMeanTemp( tmeanlattime[year], area, NPTS );
+			}
 
 			if ( callYear( 0 ) == NYEARS ) {
 				state = completed;
 				break;
-			}
-			else if ( year < callYear( 0 ) ) {
-				year   = callYear( 0 );
-				yriter = 0;
-				for ( i = 0; i < NPTS; i++ ) {
-					tmeanlatlast[i] = tmeanlat[i];
-				}
-				callTempLatSum( -1, 0 );
-				tmeanlast = getMeanTemp( tmeanlatlast, area, NPTS );
 			}
 		}
 
@@ -135,19 +169,36 @@ static int update( void* userdata )
 		}
 	}
 	else if ( state == paused ) {
+		strcpy( status1, "Paused (A to Resume)" );
 
 		runtime = pstart;
 
+		if ( screen == annual ) {
+			yearprint = stepThroughYears( pushed, crankchange, year, yearprint );
+		}
+		else if (screen == daily ) {
+			//dayprint = stepThroughDays( pushed, crankchange, 
+		}
+
 	        if ( pushed & kButtonA ) {
-			state = running;
-			pend  = pd->system->getElapsedTime() - pausedtime;
+			state      = running;
+			yearprint  = year;
+			pend       = pd->system->getElapsedTime() - pausedtime;
 			pausedtime = pausedtime + ( pend - pstart );
 		}
 	}
 	else if ( state == completed ) {
-		pstart = pd->system->getElapsedTime() - pausedtime;
+		strcpy( status1, "Done (use crank/arrows)" );
+
+		if ( screen == annual ) {
+			yearprint = stepThroughYears( pushed, crankchange, year, yearprint );
+		}
+		else if (screen == daily ) {
+
+		}
 	}
 	else if ( state == crashed ) {
+		strcpy( status1, "Crash" );
 		pd->system->error( "Error: model crashed" );
 	}
 	else {
@@ -155,39 +206,61 @@ static int update( void* userdata )
 	}
 
 
-	if ( screen == annual ) {
+	if ( screen == configure ) {
+		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, 80, 50+20 );
+	}
+	else {
+
+		if ( screen == annual ) {
+			tind      = yearprint;
+			tprint    = tmeantime;
+			tlatprint = tmeanlattime[yearprint];
+
+		        if ( pushed & kButtonB ) {
+				screen = daily;
+				strcpy( status2, "Daily" );
+				steps = 1;
+			}
+		}
+		else if ( screen == daily ) {
+			tprint    = tmeandaily;
+			tlatprint = temp;
+			tind      = niter;
+
+		        if ( pushed & kButtonB ) {
+				screen = annual;
+				strcpy( status2, "Annual" );
+				steps = STEPS_PER_UPDATE;
+			}
+		}
+
 
 		drawPlot( pd, plot1 );
-		plotArray( pd, plot1, latdeg, tmeanlatlast, NPTS );
+		plotArray( pd, plot1, latdeg, tlatprint, NPTS );
 
 		drawPlot( pd, plot2 );
-
+		plotArray( pd, plot2, yearaxis, tmeantime, NYEARS + 1 );
 
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
-		printAllLatLines( pd, lat, tmeanlatlast, NBELTS, 2, SCREEN_HEIGHT );
+		printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
 
 		pd->graphics->drawText( "avg =", strlen( "avg =" ), kASCIIEncoding, 75, 3 );
-		printFloat( pd, 120, 3, tmeanlast, 1 );
+		printFloat( pd, 120, 3, tprint[tind], 1 );
 		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 162, 3 );
 
 		pd->graphics->drawText( "year =", strlen( "year =" ), kASCIIEncoding, 195, 3 );
-		printInt( pd, 250, 3, callYear(0), 2 );
+		printInt( pd, 250, 3, yearprint, 2 );
 
 		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 295, 3 );
 		printFloat( pd, 345, 3, runtime, 1 );
-
-	}
-	else if ( screen == daily ) {
-
-	}
-	else if ( screen == configure ) {
-
-	}
-	else {
-		pd->system->error( "Error: non-existent screen reached" );
 	}
 
+	pd->graphics->drawText( status1, strlen( status1 ), kASCIIEncoding, 100, SCREEN_HEIGHT - 10 );
+	pd->graphics->drawText( status2, strlen( status2 ), kASCIIEncoding, 290, SCREEN_HEIGHT - 10 );
+
+	batteryPercentString( pd, batterylife );
+	pd->graphics->drawText( batterylife, strlen( batterylife ), kASCIIEncoding, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 10 );
 
 	//pd->system->drawFPS( SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10 );
 

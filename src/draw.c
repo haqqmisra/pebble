@@ -4,11 +4,11 @@
 
 void printLatLine( PlaydateAPI* pd, float lat, float temp, int x, int y )
 {
-	char out[144], f1[144], f2[144];
+	char out[STRLEN], f1[STRLEN], f2[STRLEN];
 	float latdeg = roundf( deg2rad( lat ) );
 
+	ftoa( temp, f2, 1 );
 	float_to_string( latdeg, f1 );
-	float_to_string( newPrecision( temp, 1 ), f2 );
 
 	f1[ strlen( f1 ) - 2 ] = '\0';
 
@@ -49,7 +49,7 @@ void printAllLatLines( PlaydateAPI* pd, float lat[], float temp[], int size, int
 
 void printFloat( PlaydateAPI* pd, int x, int y, float flt, int prec )
 {
-	char out[144];
+	char out[STRLEN];
 	float tmp;
 
 	tmp = newPrecision( flt, prec );
@@ -61,7 +61,7 @@ void printFloat( PlaydateAPI* pd, int x, int y, float flt, int prec )
 
 void printInt( PlaydateAPI* pd, int x, int y, int num, int prec )
 {
-	char out[144];
+	char out[STRLEN];
 
 	int_to_string( num, out, 10 );
 
@@ -157,10 +157,12 @@ void plotLine( PlaydateAPI* pd, struct Plot plt, float x1, float y1, float x2, f
 	if ( yy1 > plt.yorigin ) yy1 = plt.yorigin;
 	if ( yy2 > plt.yorigin ) yy2 = plt.yorigin;
 
-	pd->graphics->drawLine( xx1, yy1, xx2, yy2, 1, kColorBlack );
+
+	if ( ( x1 != IGNORE ) && ( x2 != IGNORE ) && ( y1 != IGNORE ) && ( y2 != IGNORE ) ) {
+		pd->graphics->drawLine( xx1, yy1, xx2, yy2, 1, kColorBlack );
+	}
 	return;
 }
-
 
 void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int size )
 {
@@ -170,4 +172,31 @@ void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], 
 		plotLine( pd, plt, xdata[i-1], ydata[i-1], xdata[i], ydata[i] );
 	}
 	return;
+}
+
+void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
+{
+	int i;
+
+	for ( i = 0; i < size; i++ ) {
+		strcpy( plt->xlabels[i], label[i] );
+	}
+	return;
+}
+
+void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
+{
+	int i;
+
+	for ( i = 0; i < size; i++ ) {
+		strcpy( plt->ylabels[i], label[i] );
+	}
+	return;
+}
+
+void batteryPercentString( PlaydateAPI* pd, char *out )
+{
+	int_to_string( pd->system->getBatteryPercentage(), out, 10 );
+        strcat( out, "%" );
+        return;
 }

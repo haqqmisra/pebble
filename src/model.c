@@ -1,9 +1,6 @@
 #include "model.h"
 #include "constants.h"
 
-enum yearquery { initialize, print, add };
-
-
 void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, float *area, int npts, int nbelts, float tempinit )
 {
 	int i;

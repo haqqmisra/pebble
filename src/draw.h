@@ -3,9 +3,7 @@
 
 #include <pd_api.h>
 #include "util.h"
-
-#define NUMXTICKS 6
-#define NUMYTICKS 4
+#include "constants.h"
 
 struct Plot {
 	int xdraw;
@@ -22,8 +20,8 @@ struct Plot {
 	float ymax;
 	float xconv;
 	float yconv;
-	char xlabels[NUMXTICKS+1][144];
-	char ylabels[NUMYTICKS+1][144];
+	char xlabels[NUMXTICKS+1][STRLEN];
+	char ylabels[NUMYTICKS+1][STRLEN];
 
 };
 
@@ -39,6 +37,9 @@ float xCoord( struct Plot plt, float x );
 float yCoord( struct Plot plt, float y );
 void plotLine( PlaydateAPI* pd, struct Plot plt, float x1, float y1, float x2, float y2 );
 void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int size );
+void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
+void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
+void batteryPercentString( PlaydateAPI* pd, char *out );
 
 #endif
 
