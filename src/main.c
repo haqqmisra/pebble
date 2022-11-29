@@ -86,6 +86,7 @@ static int update( void* userdata )
 
         if ( state == initializing ) {
 		strcpy( status1, "Initializing" );
+		strcpy( status2, "" );
 
 		niter  = 0;
 		yriter = 0;
@@ -131,18 +132,18 @@ static int update( void* userdata )
 		addYAxisLabels( &plot2, yaxislabel2, NUMYTICKS + 1 );
 
 		state = ready;
+		strcpy( status1, "Ready (A to Start)" );
+		strcpy( status2, "" );
 	}
 	else if ( state == ready ) {
-		strcpy( status1, "Ready (A to Start)" );
-
 	        if ( pushed & kButtonA ) {
 			state  = running;
 			screen = annual;
+			strcpy( status1, "Running (A to Pause)" );
 			strcpy( status2, "Annual" );
 		}
 	}
 	else if ( state == running ) {
-		strcpy( status1, "Running (A to Pause)" );
 
 		// model driver loop
 		for ( m = 0; m < steps; m++ ) {
@@ -168,6 +169,7 @@ static int update( void* userdata )
 
 			if ( callYear( 0 ) == NYEARS ) {
 				state = completed;
+				strcpy( status1, "Done (use crank/arrows)" );
 				break;
 			}
 		}
@@ -176,11 +178,10 @@ static int update( void* userdata )
 	        if ( pushed & kButtonA ) {
 			state = paused;
 			pstart = pd->system->getElapsedTime() - pausedtime;
+			strcpy( status1, "Paused (A to Resume)" );
 		}
 	}
 	else if ( state == paused ) {
-		strcpy( status1, "Paused (A to Resume)" );
-
 		runtime = pstart;
 
 		if ( screen == annual ) {
@@ -195,11 +196,10 @@ static int update( void* userdata )
 			yearprint  = year;
 			pend       = pd->system->getElapsedTime() - pausedtime;
 			pausedtime = pausedtime + ( pend - pstart );
+			strcpy( status1, "Running (A to Pause)" );
 		}
 	}
 	else if ( state == completed ) {
-		strcpy( status1, "Done (use crank/arrows)" );
-
 		if ( screen == annual ) {
 			yearprint = stepThroughYears( pushed, crankchange, year, yearprint );
 		}
