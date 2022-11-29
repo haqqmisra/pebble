@@ -8,18 +8,21 @@
 #include "io.h"
 #include "constants.h"
 
-static int update(void* userdata);
+static int update( void* userdata );
+void reset( void* userdata );
 const char* fontpath = "fonts/font-rains-1x.pft";
 LCDFont* font = NULL;
+PDMenuItem *resetButton = NULL;
 
 int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 {
 	(void)arg; // arg is currently only used for event = kEventKeyPressed
 
-	if ( event == kEventInit )
-	{
+	if ( event == kEventInit ) {
 		const char* err;
 		font = pd->graphics->loadFont( fontpath, &err );
+
+		resetButton = pd->system->addMenuItem( "Reset", reset, NULL );
 
 		if ( font == NULL )
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -27,13 +30,16 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		pd->system->setAutoLockDisabled( 1 );
 		pd->system->setUpdateCallback( update, pd );
 	}
+	else if ( event == kEventResume ) {
+
+	}
 
 	return 0;
 }
 
 struct Plot plot1, plot2;
 
-enum Status { initializing, running, paused, crashed, completed };
+enum Status { initializing, ready, running, paused, crashed, completed };
 enum Status state = initializing;
 
 enum Display { annual, daily, configure };
@@ -46,14 +52,12 @@ float tmeanlat[NPTS];
 float tmeantime[NYEARS+1];
 float tmeanlattime[NYEARS+1][NPTS];
 float tmeandaily[NITERMAX];
-float *tprint;
-float *tlatprint;
+float *tprint = NULL;
+float *tlatprint = NULL;
 float pstart, pend, pausedtime, runtime;
 
-int niter  = 0;
-int year, yearprint, tind;
-int yriter = 0;
-int steps;
+int niter, yriter, year, yearprint;
+int tind, steps;
 int i, m;
 
 float yearaxis[NYEARS];
@@ -83,6 +87,10 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		strcpy( status1, "Initializing" );
 
+		niter  = 0;
+		yriter = 0;
+		tind   = 0;
+
 		pd->system->resetElapsedTime();
 		pausedtime = 0;
 
@@ -111,7 +119,6 @@ static int update( void* userdata )
 		createPlot( &plot2, PLOTX, PLOTY + PLOTDY, PLOTWIDTH, PLOTHEIGHT );
 		setXlimits( &plot2, 0, NYEARS );
 		setYlimits( &plot2, TFREEZE - 40, TFREEZE + 40 );
-
 		for ( i = 0; i < NUMXTICKS + 1; i++ ) {
 			if ( NYEARS < NUMXTICKS ) {
 				float_to_string( i * (float)NYEARS / NUMXTICKS, xaxislabel2[i] );
@@ -120,10 +127,13 @@ static int update( void* userdata )
 				int_to_string( (int)floorf( i * NYEARS / NUMXTICKS ), xaxislabel2[i], 10 );
 			}
 		}
-
-
 		addXAxisLabels( &plot2, xaxislabel2, NUMXTICKS + 1 );
 		addYAxisLabels( &plot2, yaxislabel2, NUMYTICKS + 1 );
+
+		state = ready;
+	}
+	else if ( state == ready ) {
+		strcpy( status1, "Ready (A to Start)" );
 
 	        if ( pushed & kButtonA ) {
 			state  = running;
@@ -207,7 +217,7 @@ static int update( void* userdata )
 
 
 	if ( screen == configure ) {
-		pd->graphics->drawText( "Ready!", strlen( "Ready!" ), kASCIIEncoding, 80, 50+20 );
+		pd->graphics->drawText( "PEBBLE", strlen( "PEBBLE" ), kASCIIEncoding, 80, 50+20 );
 	}
 	else {
 
@@ -267,3 +277,7 @@ static int update( void* userdata )
 	return 1;
 }
 
+void reset( void* userdata ) {
+	state    = initializing;
+	screen   = configure;
+}

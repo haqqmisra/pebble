@@ -76,7 +76,6 @@ float getAlbedo( float temp )
 
 float updateDeclination( float dt, int niter )
 {
-
 	static float oldwt;
 	float dec;
 
