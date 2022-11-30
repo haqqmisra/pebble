@@ -1,27 +1,27 @@
 #include "io.h"
 
-int stepThroughYears( PDButtons pushed, float crankchange, int yr, int yrprint )
+int stepThroughTime( PDButtons pushed, float crankchange, int step, int stepprint )
 {
-	int dyr = 0;
+	int dstep = 0;
 
-	if ( ( crankchange > 0 ) && ( yrprint < yr ) ) {
-		dyr = (int)( yrprint + crankchange < yr ? crankchange : yr - yrprint );
+	if ( ( crankchange > 0 ) && ( stepprint < step ) ) {
+		dstep = (int)( stepprint + crankchange < step ? crankchange : step - stepprint );
 	}
-	else if ( ( crankchange < 0 ) && ( yrprint > 0 ) ) {
-                dyr = (int)( yrprint + crankchange >= 0 ? crankchange : 0 );
+	else if ( ( crankchange < 0 ) && ( stepprint > 0 ) ) {
+                dstep = (int)( stepprint + crankchange >= 0 ? crankchange : 0 );
         }
-	else if ( ( pushed & kButtonLeft ) && ( yrprint > 0 ) ) {
-		dyr = -1;
+	else if ( ( pushed & kButtonLeft ) && ( stepprint > 0 ) ) {
+		dstep = -1;
 	}
-	else if ( ( pushed & kButtonDown ) && ( yrprint > 0 ) ) {
-		dyr = -1;
+	else if ( ( pushed & kButtonDown ) && ( stepprint > 0 ) ) {
+		dstep = -1;
 	}
-	else if ( ( pushed & kButtonRight ) && ( yrprint < yr ) ) {
-		dyr = 1;
+	else if ( ( pushed & kButtonRight ) && ( stepprint < step ) ) {
+		dstep = 1;
 	}
-	else if ( ( pushed & kButtonUp ) && ( yrprint < yr ) ) {
-		dyr = 1;
+	else if ( ( pushed & kButtonUp ) && ( stepprint < step ) ) {
+		dstep = 1;
 	}
 
-	return yrprint + dyr;
+	return stepprint + dstep;
 }

@@ -3,7 +3,7 @@
 
 #include "pd_api.h"
 
-int stepThroughYears( PDButtons pushed, float crankchange, int yr, int yrprint );
+int stepThroughTime( PDButtons pushed, float crankchange, int step, int stepprint );
 
 #endif
 
