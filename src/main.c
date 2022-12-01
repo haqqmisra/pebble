@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "main.h"
 #include "pd_api.h"
 #include "model.h"
 #include "util.h"
@@ -8,12 +9,12 @@
 #include "io.h"
 #include "constants.h"
 
-static int update( void* userdata );
-void reset( void* userdata );
-
 const char* fontpath = "fonts/font-rains-1x.pft";
 LCDFont* font = NULL;
 PDMenuItem *resetButton = NULL;
+
+Status state   = initializing;
+Display screen = configure;
 
 int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 {
@@ -25,11 +26,14 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 
 		resetButton = pd->system->addMenuItem( "Reset", reset, NULL );
 
-		if ( font == NULL )
+		if ( font == NULL ) {
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
+		}
 
 		pd->system->setAutoLockDisabled( 1 );
 		pd->system->setUpdateCallback( update, pd );
+
+		changeState( initializing );
 	}
 	else if ( event == kEventResume ) {
 
@@ -39,12 +43,6 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 }
 
 struct Plot plot1, plot2;
-
-enum Status { initializing, ready, running, paused, crash, done };
-enum Status state = initializing;
-
-enum Display { annual, daily, configure };
-enum Display screen = configure;
 
 float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
 float latdeg[NPTS];
@@ -97,7 +95,6 @@ static int update( void* userdata )
 		strcpy( msg1[done], "Done (use crank/arrows)" );
 		strcpy( msg1[crash], "Crashed" );
 
-		strcpy( status1, msg1[state] );
 		strcpy( status2, "" );
 
 		niter  = 0;
@@ -144,14 +141,14 @@ static int update( void* userdata )
 		addXAxisLabels( &plot2, xaxislabel2, NUMXTICKS + 1 );
 		addYAxisLabels( &plot2, yaxislabel2, NUMYTICKS + 1 );
 
-		state = ready;
-		strcpy( status1, msg1[state] );
+		changeState( ready );
+
 		strcpy( status2, "" );
 	}
 	else if ( state == ready ) {
 	        if ( pushed & kButtonA ) {
-			state  = running;
-			strcpy( status1, msg1[state] );
+			changeState( running );
+
 			screen = annual;
 			strcpy( status2, "Annual" );
 		}
@@ -186,14 +183,12 @@ static int update( void* userdata )
 			}
 
 			if ( callYear( 0 ) == NYEARS ) {
-				state = done;
-				strcpy( status1, msg1[state] );
+				changeState( done );
 				break;
 			}
 
 			if ( niter >= NITERMAX ) {
-				state = crash;
-				strcpy( status1, msg1[state] );
+				changeState( crash );
 				pd->system->error( "NITERMAX exceeded" );
 				break;
 			}
@@ -201,8 +196,7 @@ static int update( void* userdata )
 
 		runtime = pd->system->getElapsedTime() - pausedtime;
 	        if ( pushed & kButtonA ) {
-			state = paused;
-			strcpy( status1, msg1[state] );
+			changeState( paused );
 			pstart = pd->system->getElapsedTime() - pausedtime;
 		}
 	}
@@ -217,8 +211,7 @@ static int update( void* userdata )
 		}
 
 	        if ( pushed & kButtonA ) {
-			state      = running;
-			strcpy( status1, msg1[state] );
+			changeState( running );
 
 			yearprint  = year;
 			iterprint  = niter;
@@ -306,4 +299,11 @@ static int update( void* userdata )
 void reset( void* userdata ) {
 	state    = initializing;
 	screen   = configure;
+	return;
+}
+
+void changeState( Status newstate ) {
+	state = newstate;
+	strcpy( status1, msg1[newstate] );
+	return;
 }
