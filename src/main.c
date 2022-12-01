@@ -66,7 +66,8 @@ char xaxislabel2[NUMXTICKS+1][STRLEN];
 char yaxislabel1[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
 char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
 
-char msg1[6][STRLEN];
+char msg1[NUMSTATUS][STRLEN];
+char msg2[NUMDISPLAY][STRLEN];
 
 char status1[STRLEN], status2[STRLEN];
 char batterylife[STRLEN];
