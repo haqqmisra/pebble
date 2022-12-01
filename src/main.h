@@ -10,5 +10,6 @@ typedef enum { annual, daily, configure } Display;
 static int update( void* userdata );
 void reset( void* userdata );
 void changeState( Status newstate );
+void changeScreen( Display newscreen );
 
 #endif

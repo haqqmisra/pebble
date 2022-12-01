@@ -34,6 +34,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		pd->system->setUpdateCallback( update, pd );
 
 		changeState( initializing );
+		changeScreen( configure );
 	}
 	else if ( event == kEventResume ) {
 
@@ -68,7 +69,6 @@ char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
 
 char msg1[NUMSTATUS][STRLEN];
 char msg2[NUMDISPLAY][STRLEN];
-
 char status1[STRLEN], status2[STRLEN];
 char batterylife[STRLEN];
 
@@ -96,7 +96,9 @@ static int update( void* userdata )
 		strcpy( msg1[done], "Done (use crank/arrows)" );
 		strcpy( msg1[crash], "Crashed" );
 
-		strcpy( status2, "" );
+		strcpy( msg2[configure], "" );
+		strcpy( msg2[annual], "Annual View (B for Daily)" );
+		strcpy( msg2[daily], "Daily View (B for Annual)" );
 
 		niter  = 0;
 		yriter = 0;
@@ -143,15 +145,11 @@ static int update( void* userdata )
 		addYAxisLabels( &plot2, yaxislabel2, NUMYTICKS + 1 );
 
 		changeState( ready );
-
-		strcpy( status2, "" );
 	}
 	else if ( state == ready ) {
 	        if ( pushed & kButtonA ) {
 			changeState( running );
-
-			screen = annual;
-			strcpy( status2, "Annual" );
+			changeScreen( annual );
 		}
 	}
 	else if ( state == running ) {
@@ -247,9 +245,7 @@ static int update( void* userdata )
 			tlatprint = tmeanlattime[yearprint];
 
 		        if ( pushed & kButtonB ) {
-				screen = daily;
-				strcpy( status2, "Daily View (B for Annual)" );
-				steps = 1;
+				changeScreen( daily );
 			}
 		}
 		else if ( screen == daily ) {
@@ -258,9 +254,7 @@ static int update( void* userdata )
 			tlatprint = tmeandailylattime[iterprint];
 
 		        if ( pushed & kButtonB ) {
-				screen = annual;
-				strcpy( status2, "Annual View (B for Daily)" );
-				steps = STEPS_PER_UPDATE;
+				changeScreen( annual );
 			}
 		}
 
@@ -306,5 +300,18 @@ void reset( void* userdata ) {
 void changeState( Status newstate ) {
 	state = newstate;
 	strcpy( status1, msg1[newstate] );
+	return;
+}
+
+void changeScreen( Display newscreen ) {
+	screen = newscreen;
+	strcpy( status2, msg2[newscreen] );
+
+	if ( screen == daily ) {
+		steps = 1;
+	}
+	else if ( screen == annual ) {
+		steps = STEPS_PER_UPDATE;
+	}
 	return;
 }
