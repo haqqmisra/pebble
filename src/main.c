@@ -51,13 +51,15 @@ float latdeg[NPTS];
 float tmeanlat[NPTS];
 float tmeantime[NYEARS+1];
 float tmeanlattime[NYEARS+1][NPTS];
-float tmeandaily[NITERMAX];
 float tmeandailylattime[NITERMAX][NPTS];
 float *tprint = NULL;
 float *tlatprint = NULL;
 float pstart, pend, pausedtime, runtime;
 
-int niter, yriter, year, yearprint, iterprint;
+int *itercount;
+float *tmeandaily;
+
+int niter, yriter, year, yearprint, iterprint, daymax;
 int tind, steps;
 int i, m;
 
@@ -89,6 +91,25 @@ static int update( void* userdata )
 
 
         if ( state == initializing ) {
+		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
+
+		year  = callYear( -1 );
+		for ( i = 0; i < NITERMAX; i++ ) {
+			updateDeclination( DT, i );
+
+			if ( callYear( 0 ) == NYEARS + 1 ) {
+				break;
+			}
+		}
+		daymax = i;
+		year  = callYear( -1 );
+		//printFloat( pd, 120, 3, i, 1 );
+		tmeandaily = (float*) pd->system->realloc( NULL, daymax * sizeof( float ) );
+		itercount  = (int*)   pd->system->realloc( NULL, daymax * sizeof( int   ) );
+		for ( i = 0 ; i < daymax; i++ ) {
+			itercount[i] = i;
+		}
+
 		strcpy( msg1[initializing], "Initializing" );
 		strcpy( msg1[ready], "Ready (A to Start)" );
 		strcpy( msg1[running], "Running (A to Pause)" );
@@ -108,10 +129,8 @@ static int update( void* userdata )
 		pausedtime = 0;
 
 		steps = STEPS_PER_UPDATE;
-		year  = callYear( -1 );
 		callTempLatSum( -1, 0 );
 
-		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
 		for ( i = 0; i < NPTS; i++ ) {
 			latdeg[i]               = deg2rad( lat[i] );
 			tmeanlattime[0][i]      = TINIT;
@@ -273,8 +292,11 @@ static int update( void* userdata )
 		printFloat( pd, 120, 3, tprint[tind], 1 );
 		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 162, 3 );
 
-		pd->graphics->drawText( "yr =", strlen( "yr =" ), kASCIIEncoding, 280, SCREEN_HEIGHT - 20 );
-		printInt( pd, 320, SCREEN_HEIGHT - 20, yearprint, 2 );
+		pd->graphics->drawText( "yr =", strlen( "yr =" ), kASCIIEncoding, 285, SCREEN_HEIGHT - 20 );
+		printInt( pd, 325, SCREEN_HEIGHT - 20, yearprint, 2 );
+
+		pd->graphics->drawText( "day =", strlen( "day =" ), kASCIIEncoding, 285, SCREEN_HEIGHT - 9 );
+		printInt( pd, 325, SCREEN_HEIGHT - 9, itercount[iterprint], 2 );
 
 		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 295, 3 );
 		printFloat( pd, 345, 3, runtime, 1 );
