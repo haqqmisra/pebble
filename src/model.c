@@ -24,7 +24,9 @@ void init( float *temp, float *lat, float *xlat, float *dxlat, float *diff, floa
 		diff[i] = D0;
 	}
 
-	wvel = sqrtf( ( BIG_G * MSTAR ) / powf( RORBIT, 3 ) );
+	//wvel = sqrtf( ( BIG_G * MSTAR ) / powf( RORBIT, 3 ) );
+	// need to cast in log form to maintain float precision
+	wvel = expf( 0.5 * ( logf( BIG_G ) + logf( MSTAR ) - 3 * logf( RORBIT ) ) );
 
 	callYear( -1 );
 

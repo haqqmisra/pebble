@@ -96,18 +96,18 @@ static int update( void* userdata )
 		year  = callYear( -1 );
 		for ( i = 0; i < NITERMAX; i++ ) {
 			updateDeclination( DT, i );
-
 			if ( callYear( 0 ) == NYEARS + 1 ) {
 				break;
 			}
 		}
-		daymax = i;
+		daymax = i + 1;
 		year  = callYear( -1 );
 		//printFloat( pd, 120, 3, i, 1 );
 		tmeandaily = (float*) pd->system->realloc( NULL, daymax * sizeof( float ) );
 		itercount  = (int*)   pd->system->realloc( NULL, daymax * sizeof( int   ) );
 		for ( i = 0 ; i < daymax; i++ ) {
 			itercount[i] = i;
+			tmeandaily[i] = IGNORE;
 		}
 
 		strcpy( msg1[initializing], "Initializing" );
@@ -283,6 +283,7 @@ static int update( void* userdata )
 
 		drawPlot( pd, plot2 );
 		plotArray( pd, plot2, yearaxis, tmeantime, NYEARS + 1 );
+
 
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
