@@ -154,7 +154,7 @@ void updateAllLat( float *temp, float dt, int niter, int npts, float diff[], flo
 float getMeanTemp( float temp[], float area[], int npts )
  {
 	int i;
-	int tempsum = 0;
+	float tempsum = 0;
 
 	for ( i = 1; i < npts - 1; i++ ) {
 		tempsum += temp[i] * area[i];

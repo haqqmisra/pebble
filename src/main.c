@@ -51,13 +51,18 @@ float latdeg[NPTS];
 float tmeanlat[NPTS];
 float tmeantime[NYEARS+1];
 float tmeanlattime[NYEARS+1][NPTS];
-float tmeandailylattime[NITERMAX][NPTS];
 float *tprint = NULL;
 float *tlatprint = NULL;
 float pstart, pend, pausedtime, runtime;
 
-int *itercount;
+//int itercount[NITERMAX];
+//float tmeandaily[NITERMAX];
+float tmeandailylattime[NITERMAX][NPTS];
 float *tmeandaily;
+int *itercount;
+int *daycount;
+///float **tmeandailylattime;
+//float tmeandailylattime[NITERMAX][NPTS];
 
 int niter, yriter, year, yearprint, iterprint, daymax;
 int tind, steps;
@@ -102,11 +107,12 @@ static int update( void* userdata )
 		}
 		daymax = i + 1;
 		year  = callYear( -1 );
-		//printFloat( pd, 120, 3, i, 1 );
-		tmeandaily = (float*) pd->system->realloc( NULL, daymax * sizeof( float ) );
-		itercount  = (int*)   pd->system->realloc( NULL, daymax * sizeof( int   ) );
+		tmeandaily        = (float*) pd->system->realloc( NULL, daymax * sizeof( float ) );
+		itercount         = (int*)   pd->system->realloc( NULL, daymax * sizeof( int ) );
+		daycount          = (int*)   pd->system->realloc( NULL, daymax * sizeof( int ) );
 		for ( i = 0 ; i < daymax; i++ ) {
-			itercount[i] = i;
+			itercount[i]  = i;
+			daycount[i]   = 0;
 			tmeandaily[i] = IGNORE;
 		}
 
@@ -178,11 +184,11 @@ static int update( void* userdata )
 			niter++;
 			yriter++;
 			iterprint = niter;
+			daycount[niter] = yriter;
 
 			updateAllLat( temp, DT, niter, NPTS, diff, thermal, lat, xlat, dxlat );
 
 			tmeandaily[niter] = getMeanTemp( temp, area, NPTS );
-
 			for ( i = 0; i < NPTS; i++ ) {
 				tmeandailylattime[niter][i] = temp[i];
 			}
@@ -257,7 +263,6 @@ static int update( void* userdata )
 		pd->graphics->drawText( "PEBBLE", strlen( "PEBBLE" ), kASCIIEncoding, 80, 50+20 );
 	}
 	else {
-
 		if ( screen == annual ) {
 			tind      = yearprint;
 			tprint    = tmeantime;
@@ -276,14 +281,11 @@ static int update( void* userdata )
 				changeScreen( annual );
 			}
 		}
-
-
 		drawPlot( pd, plot1 );
 		plotArray( pd, plot1, latdeg, tlatprint, NPTS );
 
 		drawPlot( pd, plot2 );
 		plotArray( pd, plot2, yearaxis, tmeantime, NYEARS + 1 );
-
 
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
@@ -293,21 +295,21 @@ static int update( void* userdata )
 		printFloat( pd, 120, 3, tprint[tind], 1 );
 		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 162, 3 );
 
-		pd->graphics->drawText( "yr =", strlen( "yr =" ), kASCIIEncoding, 285, SCREEN_HEIGHT - 20 );
-		printInt( pd, 325, SCREEN_HEIGHT - 20, yearprint, 2 );
+		pd->graphics->drawText( "yr =", strlen( "yr =" ), kASCIIEncoding, 318, SCREEN_HEIGHT - 20 );
+		printInt( pd, 360, SCREEN_HEIGHT - 20, yearprint, 2 );
 
-		pd->graphics->drawText( "day =", strlen( "day =" ), kASCIIEncoding, 285, SCREEN_HEIGHT - 9 );
-		printInt( pd, 325, SCREEN_HEIGHT - 9, itercount[iterprint], 2 );
+		pd->graphics->drawText( "day =", strlen( "day =" ), kASCIIEncoding, 310, SCREEN_HEIGHT - 9 );
+		printInt( pd, 360, SCREEN_HEIGHT - 9, daycount[iterprint], 2 );
 
-		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 295, 3 );
-		printFloat( pd, 345, 3, runtime, 1 );
+		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );
+		printFloat( pd, 365, 3, runtime, 1 );
 	}
 
 	pd->graphics->drawText( status1, strlen( status1 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 20 );
 	pd->graphics->drawText( status2, strlen( status2 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 9 );
 
-	batteryPercentString( pd, batterylife );
-	pd->graphics->drawText( batterylife, strlen( batterylife ), kASCIIEncoding, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 9 );
+	//batteryPercentString( pd, batterylife );
+	//pd->graphics->drawText( batterylife, strlen( batterylife ), kASCIIEncoding, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 9 );
 
 	//pd->system->drawFPS( SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10 );
 

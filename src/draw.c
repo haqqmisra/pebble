@@ -50,11 +50,8 @@ void printAllLatLines( PlaydateAPI* pd, float lat[], float temp[], int size, int
 void printFloat( PlaydateAPI* pd, int x, int y, float flt, int prec )
 {
 	char out[STRLEN];
-	float tmp;
 
-	tmp = newPrecision( flt, prec );
-	float_to_string( tmp, out );
-
+	ftoa( flt, out, prec );
 	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
 	return;
 }
