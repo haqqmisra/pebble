@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "main.h"
-#include "pd_api.h"
-#include "model.h"
-#include "util.h"
-#include "draw.h"
-#include "io.h"
-#include "constants.h"
 
 const char* fontpath = "fonts/font-rains-1x.pft";
 LCDFont* font = NULL;
@@ -15,6 +6,40 @@ PDMenuItem *resetButton = NULL;
 
 Status state   = initializing;
 Display screen = configure;
+
+struct Plot plot1, plot2;
+
+float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
+float latdeg[NPTS];
+
+float tmeanlat[NPTS];
+float tmeantime[NYEARS+1];
+float tmeanlattime[NYEARS+1][NPTS];
+float *tprint = NULL;
+float *tlatprint = NULL;
+float pstart, pend, pausedtime, runtime;
+
+float *tmeandaily;
+int *itercount;
+int *daycount;
+float **tmeandailylattime;
+
+int niter, yriter, year, yearprint, iterprint, daymax;
+int iterold;
+int tind, steps;
+int i, m;
+
+float yearaxis[NYEARS];
+char xaxislabel1[NUMXTICKS+1][STRLEN] = { "SP", "60S", "30S", "EQ", "30N", "60N", "NP" };
+char xaxislabel2[NUMXTICKS+1][STRLEN];
+char yaxislabel1[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
+char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
+
+char msg1[NUMSTATUS][STRLEN];
+char msg2[NUMDISPLAY][STRLEN];
+char status1[STRLEN], status2[STRLEN];
+char batterylife[STRLEN];
+
 
 int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 {
@@ -37,48 +62,16 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		changeScreen( configure );
 	}
 	else if ( event == kEventResume ) {
-
+		freeMemory( pd );
+	}
+	else if ( event == kEventTerminate ) {
+		freeMemory( pd );
 	}
 
 	return 0;
 }
 
-struct Plot plot1, plot2;
 
-float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
-float latdeg[NPTS];
-
-float tmeanlat[NPTS];
-float tmeantime[NYEARS+1];
-float tmeanlattime[NYEARS+1][NPTS];
-float *tprint = NULL;
-float *tlatprint = NULL;
-float pstart, pend, pausedtime, runtime;
-
-//int itercount[NITERMAX];
-//float tmeandaily[NITERMAX];
-float tmeandailylattime[NITERMAX][NPTS];
-float *tmeandaily;
-int *itercount;
-int *daycount;
-///float **tmeandailylattime;
-//float tmeandailylattime[NITERMAX][NPTS];
-
-int niter, yriter, year, yearprint, iterprint, daymax;
-int iterold;
-int tind, steps;
-int i, m;
-
-float yearaxis[NYEARS];
-char xaxislabel1[NUMXTICKS+1][STRLEN] = { "SP", "60S", "30S", "EQ", "30N", "60N", "NP" };
-char xaxislabel2[NUMXTICKS+1][STRLEN];
-char yaxislabel1[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
-char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
-
-char msg1[NUMSTATUS][STRLEN];
-char msg2[NUMDISPLAY][STRLEN];
-char status1[STRLEN], status2[STRLEN];
-char batterylife[STRLEN];
 
 static int update( void* userdata )
 {
@@ -108,10 +101,20 @@ static int update( void* userdata )
 		}
 		daymax = i + 1;
 		year  = callYear( -1 );
+		tmeandailylattime = (float**) pd->system->realloc( NULL, daymax * sizeof( float* ) );
 		tmeandaily        = (float*) pd->system->realloc( NULL, daymax * sizeof( float ) );
 		itercount         = (int*)   pd->system->realloc( NULL, daymax * sizeof( int ) );
 		daycount          = (int*)   pd->system->realloc( NULL, daymax * sizeof( int ) );
+		if ( ( tmeandailylattime == NULL ) || ( tmeandaily == NULL ) || ( itercount == NULL ) || ( daycount == NULL ) ) {
+			changeState( crash );
+			pd->system->error( "Out of memory" );
+		}
 		for ( i = 0 ; i < daymax; i++ ) {
+			tmeandailylattime[i] = (float*) pd->system->realloc( NULL, ( NPTS + 1 ) * sizeof( float ) );
+			if ( tmeandailylattime[i] == NULL ) {
+				changeState( crash );
+				pd->system->error( "Out of memory" );
+			}
 			itercount[i]  = i;
 			daycount[i]   = 0;
 			tmeandaily[i] = IGNORE;
@@ -341,6 +344,20 @@ static int update( void* userdata )
 void reset( void* userdata ) {
 	state    = initializing;
 	screen   = configure;
+	return;
+}
+
+void freeMemory( PlaydateAPI* pd ) {
+	int i;
+
+	tmeandaily = pd->system->realloc( tmeandaily, 0 );
+	itercount  = pd->system->realloc( itercount, 0 );
+	daycount   = pd->system->realloc( daycount, 0 );
+	for ( i = 0 ; i < daymax; i++ ) {
+		tmeandailylattime[i] = pd->system->realloc( NULL, 0 );
+	}
+	tmeandailylattime = pd->system->realloc( NULL, 0 );
+
 	return;
 }
 
