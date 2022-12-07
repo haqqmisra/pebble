@@ -65,6 +65,7 @@ int *daycount;
 //float tmeandailylattime[NITERMAX][NPTS];
 
 int niter, yriter, year, yearprint, iterprint, daymax;
+int iterold;
 int tind, steps;
 int i, m;
 
@@ -231,7 +232,14 @@ static int update( void* userdata )
 			yearprint = stepThroughTime( pushed, crankchange, year, yearprint );
 		}
 		else if (screen == daily ) {
+			iterold   = iterprint;
 			iterprint = stepThroughTime( pushed, crankchange, niter, iterprint );
+			if ( ( iterold < iterprint ) && ( daycount[iterold] > daycount[iterprint] ) ) {
+				yearprint++;
+			}
+			else if ( ( iterold > iterprint ) && ( daycount[iterold] < daycount[iterprint] ) ) {
+				yearprint--;
+			}
 		}
 
 	        if ( pushed & kButtonA ) {
@@ -248,7 +256,14 @@ static int update( void* userdata )
 			yearprint = stepThroughTime( pushed, crankchange, year, yearprint );
 		}
 		else if (screen == daily ) {
+			iterold   = iterprint;
 			iterprint = stepThroughTime( pushed, crankchange, niter, iterprint );
+			if ( ( iterold < iterprint ) && ( daycount[iterold] > daycount[iterprint] ) ) {
+				yearprint++;
+			}
+			else if ( ( iterold > iterprint ) && ( daycount[iterold] < daycount[iterprint] ) ) {
+				yearprint--;
+			}
 		}
 	}
 	else if ( state == crash ) {
@@ -286,19 +301,20 @@ static int update( void* userdata )
 
 		drawPlot( pd, plot2 );
 		plotArray( pd, plot2, yearaxis, tmeantime, NYEARS + 1 );
+		plotMarker( pd, plot2, yearaxis, tmeantime, yearprint );
 
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
 		printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
 
-		pd->graphics->drawText( "avg =", strlen( "avg =" ), kASCIIEncoding, 75, 3 );
-		printFloat( pd, 120, 3, tprint[tind], 1 );
-		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 162, 3 );
+		pd->graphics->drawText( "avg:", strlen( "avg:" ), kASCIIEncoding, 75, 3 );
+		printFloat( pd, 110, 3, tprint[tind], 1 );
+		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 152, 3 );
 
-		pd->graphics->drawText( "yr =", strlen( "yr =" ), kASCIIEncoding, 318, SCREEN_HEIGHT - 20 );
+		pd->graphics->drawText( "year:", strlen( "year:" ), kASCIIEncoding, 315, SCREEN_HEIGHT - 20 );
 		printInt( pd, 360, SCREEN_HEIGHT - 20, yearprint, 2 );
 
-		pd->graphics->drawText( "day =", strlen( "day =" ), kASCIIEncoding, 310, SCREEN_HEIGHT - 9 );
+		pd->graphics->drawText( "day:", strlen( "day:" ), kASCIIEncoding, 323, SCREEN_HEIGHT - 9 );
 		printInt( pd, 360, SCREEN_HEIGHT - 9, daycount[iterprint], 2 );
 
 		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );

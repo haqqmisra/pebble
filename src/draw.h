@@ -37,6 +37,7 @@ float xCoord( struct Plot plt, float x );
 float yCoord( struct Plot plt, float y );
 void plotLine( PlaydateAPI* pd, struct Plot plt, float x1, float y1, float x2, float y2 );
 void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int size );
+void plotMarker( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int index );
 void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
 void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
 void batteryPercentString( PlaydateAPI* pd, char *out );

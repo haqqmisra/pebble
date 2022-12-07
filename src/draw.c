@@ -171,6 +171,18 @@ void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], 
 	return;
 }
 
+void plotMarker( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int index )
+{
+	int xx = (int)xCoord( plt, xdata[index] );
+	int yy = (int)yCoord( plt, ydata[index] );
+	int radius = 5;
+	int xoffset = 3;
+	int yoffset = 2;
+
+	pd->graphics->drawEllipse( xx - xoffset, yy - yoffset, radius, radius, 2, 0, 0, kColorBlack );
+	return;
+}
+
 void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
 {
 	int i;
