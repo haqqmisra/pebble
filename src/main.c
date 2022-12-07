@@ -3,9 +3,11 @@
 const char* fontpath = "fonts/font-rains-1x.pft";
 LCDFont* font = NULL;
 PDMenuItem *resetButton = NULL;
+PDMenuItem *unitsButton = NULL;
 
 Status state   = initializing;
 Display screen = configure;
+Units units    = Kelvin;
 
 struct Plot plot1, plot2;
 
@@ -18,6 +20,10 @@ float tmeanlattime[NYEARS+1][NPTS];
 float *tprint = NULL;
 float *tlatprint = NULL;
 float pstart, pend, pausedtime, runtime;
+
+float tlatconvert[NPTS];
+float tconvert;
+//char unitlabels[NUMUNITS] = { "K", "C" };
 
 float *tmeandaily;
 int *itercount;
@@ -50,6 +56,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		font = pd->graphics->loadFont( fontpath, &err );
 
 		resetButton = pd->system->addMenuItem( "Reset", reset, NULL );
+		//unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, changeUnits, NULL );
 
 		if ( font == NULL ) {
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -308,26 +315,33 @@ static int update( void* userdata )
 
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
-		printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
 
-		pd->graphics->drawText( "avg:", strlen( "avg:" ), kASCIIEncoding, 75, 3 );
-		printFloat( pd, 110, 3, tprint[tind], 1 );
-		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 152, 3 );
+		if ( units == Kelvin ) {
+			printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
+			drawVarFloat( pd, "avg:", tprint[tind], 75, 3 );
+			pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 152, 3 );
+		}
+		else if ( units == Celsius ) {
+			tconvert = tprint[tind] - TFREEZE;
+			for ( i = 0; i < NPTS; i++ ) {
+				tlatconvert[i] = tlatprint[i] - TFREEZE;
+			}
+			printAllLatLines( pd, lat, tlatconvert, NBELTS, 2, SCREEN_HEIGHT );
+			drawVarFloat( pd, "avg:", tconvert, 75, 3 );
+			pd->graphics->drawText( "C", strlen( "C" ), kASCIIEncoding, 152, 3 );
+		}
 
-		pd->graphics->drawText( "sol:", strlen( "sol:" ), kASCIIEncoding, 170, 3 );
-		printFloat( pd, 205, 3, S0/S0, 1 );
+		//pd->graphics->drawText( "avg:", strlen( "avg:" ), kASCIIEncoding, 75, 3 );
+		//printFloat( pd, 110, 3, tprint[tind], 1 );
 
-		pd->graphics->drawText( "obl:", strlen( "obl:" ), kASCIIEncoding, 252, 3 );
-		printFloat( pd, 290, 3, OBLIQUITY, 1 );
+		drawVarFloat( pd, "sol:", S0/S0, 175, 3 );
+		drawVarFloat( pd, "obl:", OBLIQUITY, 252, 3 );
 
-		pd->graphics->drawText( "year:", strlen( "year:" ), kASCIIEncoding, 315, SCREEN_HEIGHT - 20 );
-		printInt( pd, 360, SCREEN_HEIGHT - 20, yearprint, 2 );
-
-		pd->graphics->drawText( "day:", strlen( "day:" ), kASCIIEncoding, 323, SCREEN_HEIGHT - 9 );
-		printInt( pd, 360, SCREEN_HEIGHT - 9, daycount[iterprint], 2 );
+		drawVarInt( pd, "year:", yearprint, 315, SCREEN_HEIGHT - 20 );
+		drawVarInt( pd, "day:", daycount[iterprint], 323, SCREEN_HEIGHT - 9 );
 
 		//pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );
-		printFloat( pd, 350, 3, runtime, 1 );
+		//printFloat( pd, 350, 3, runtime, 1 );
 	}
 
 	pd->graphics->drawText( status1, strlen( status1 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 20 );

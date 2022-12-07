@@ -41,6 +41,8 @@ void plotMarker( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[],
 void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
 void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size );
 void batteryPercentString( PlaydateAPI* pd, char *out );
+void drawVarFloat( PlaydateAPI* pd, char* name, float value, int x, int y );
+void drawVarInt( PlaydateAPI* pd, char* name, int value, int x, int y );
 
 #endif
 

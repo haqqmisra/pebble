@@ -16,6 +16,7 @@
 
 typedef enum { initializing, ready, running, paused, crash, done } Status;
 typedef enum { annual, daily, configure } Display;
+typedef enum { Kelvin, Celsius, Fahrenheit } Units;
 
 static int update( void* userdata );
 void reset( void* userdata );

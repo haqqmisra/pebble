@@ -34,6 +34,7 @@
 #define STEPS_PER_UPDATE 30
 #define NBELTS 18
 #define NPTS NBELTS+2
+#define NUMUNITS 2
 
 // graphics constants
 #define SCREEN_WIDTH 400
@@ -47,5 +48,6 @@
 #define STRLEN 32
 #define NUMXTICKS 6
 #define NUMYTICKS 4
+#define VARSPACE 34
 
 #endif
