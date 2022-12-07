@@ -48,6 +48,6 @@
 #define STRLEN 32
 #define NUMXTICKS 6
 #define NUMYTICKS 4
-#define VARSPACE 34
+#define VARSPACE 9
 
 #endif

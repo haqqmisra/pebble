@@ -20,6 +20,7 @@ typedef enum { Kelvin, Celsius, Fahrenheit } Units;
 
 static int update( void* userdata );
 void reset( void* userdata );
+void updateUnits( PlaydateAPI* pd, PDMenuItem *menuItem );
 void changeState( Status newstate );
 void changeScreen( Display newscreen );
 void freeMemory( PlaydateAPI* pd );

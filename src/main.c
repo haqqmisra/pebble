@@ -23,7 +23,7 @@ float pstart, pend, pausedtime, runtime;
 
 float tlatconvert[NPTS];
 float tconvert;
-//char unitlabels[NUMUNITS] = { "K", "C" };
+const char* unitlabels[NUMUNITS] = { "K", "C" };
 
 float *tmeandaily;
 int *itercount;
@@ -56,7 +56,8 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		font = pd->graphics->loadFont( fontpath, &err );
 
 		resetButton = pd->system->addMenuItem( "Reset", reset, NULL );
-		//unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, changeUnits, NULL );
+		unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, NULL, NULL );
+		pd->system->setMenuItemValue( unitsButton, units );
 
 		if ( font == NULL ) {
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -69,7 +70,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		changeScreen( configure );
 	}
 	else if ( event == kEventResume ) {
-		freeMemory( pd );
+		//freeMemory( pd );
 	}
 	else if ( event == kEventTerminate ) {
 		freeMemory( pd );
@@ -97,6 +98,7 @@ static int update( void* userdata )
 
 
         if ( state == initializing ) {
+		freeMemory( pd );
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
 
 		year  = callYear( -1 );
@@ -316,6 +318,7 @@ static int update( void* userdata )
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
 
+		units = pd->system->getMenuItemValue( unitsButton );
 		if ( units == Kelvin ) {
 			printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
 			drawVarFloat( pd, "avg:", tprint[tind], 75, 3 );
@@ -355,13 +358,21 @@ static int update( void* userdata )
 	return 1;
 }
 
-void reset( void* userdata ) {
+void reset( void* userdata )
+{
 	state    = initializing;
 	screen   = configure;
 	return;
 }
 
-void freeMemory( PlaydateAPI* pd ) {
+void updateUnits( PlaydateAPI* pd, PDMenuItem *menuItem )
+{
+	units = pd->system->getMenuItemValue( menuItem );
+	return;
+}
+
+void freeMemory( PlaydateAPI* pd )
+{
 	int i;
 
 	tmeandaily = pd->system->realloc( tmeandaily, 0 );
@@ -375,13 +386,15 @@ void freeMemory( PlaydateAPI* pd ) {
 	return;
 }
 
-void changeState( Status newstate ) {
+void changeState( Status newstate )
+{
 	state = newstate;
 	strcpy( status1, msg1[newstate] );
 	return;
 }
 
-void changeScreen( Display newscreen ) {
+void changeScreen( Display newscreen )
+{
 	screen = newscreen;
 	strcpy( status2, msg2[newscreen] );
 

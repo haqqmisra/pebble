@@ -213,13 +213,13 @@ void batteryPercentString( PlaydateAPI* pd, char *out )
 void drawVarFloat( PlaydateAPI* pd, char* name, float value, int x, int y )
 {
 	pd->graphics->drawText( name, strlen( name ), kASCIIEncoding, x, y );
-	printFloat( pd, x + VARSPACE, y, value, 1 );
+	printFloat( pd, x + strlen( name ) * VARSPACE - 1, y, value, 1 );
 	return;
 }
 
 void drawVarInt( PlaydateAPI* pd, char* name, int value, int x, int y )
 {
 	pd->graphics->drawText( name, strlen( name ), kASCIIEncoding, x, y );
-	printInt( pd, x + VARSPACE, y, value, 2 );
+	printInt( pd, x + strlen( name ) * VARSPACE - 1, y, value, 2 );
 	return;
 }
