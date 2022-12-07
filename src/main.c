@@ -311,14 +311,20 @@ static int update( void* userdata )
 		printFloat( pd, 110, 3, tprint[tind], 1 );
 		pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 152, 3 );
 
+		pd->graphics->drawText( "sol:", strlen( "sol:" ), kASCIIEncoding, 170, 3 );
+		printFloat( pd, 205, 3, S0/S0, 1 );
+
+		pd->graphics->drawText( "obl:", strlen( "obl:" ), kASCIIEncoding, 252, 3 );
+		printFloat( pd, 290, 3, OBLIQUITY, 1 );
+
 		pd->graphics->drawText( "year:", strlen( "year:" ), kASCIIEncoding, 315, SCREEN_HEIGHT - 20 );
 		printInt( pd, 360, SCREEN_HEIGHT - 20, yearprint, 2 );
 
 		pd->graphics->drawText( "day:", strlen( "day:" ), kASCIIEncoding, 323, SCREEN_HEIGHT - 9 );
 		printInt( pd, 360, SCREEN_HEIGHT - 9, daycount[iterprint], 2 );
 
-		pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );
-		printFloat( pd, 365, 3, runtime, 1 );
+		//pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );
+		printFloat( pd, 350, 3, runtime, 1 );
 	}
 
 	pd->graphics->drawText( status1, strlen( status1 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 20 );
