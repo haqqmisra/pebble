@@ -3,7 +3,10 @@
 LCDFont* font = NULL;
 PDMenuItem *resetButton = NULL;
 PDMenuItem *unitsButton = NULL;
+
 SDFile* outfile;
+
+json_encoder* encoder;
 
 Status state   = initializing;
 Display screen = configure;
@@ -56,8 +59,8 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		const char* err;
 		font = pd->graphics->loadFont( fontpath, &err );
 
-		resetButton = pd->system->addMenuItem( "Reset", reset, NULL );
-		unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, NULL, NULL );
+		resetButton = pd->system->addMenuItem( "Reset", reset, pd );
+		unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, updateUnits, pd );
 		pd->system->setMenuItemValue( unitsButton, units );
 
 		if ( font == NULL ) {
@@ -71,7 +74,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 		changeScreen( configure );
 	}
 	else if ( event == kEventResume ) {
-		//freeMemory( pd );
+		//
 	}
 	else if ( event == kEventTerminate ) {
 		freeMemory( pd );
@@ -99,10 +102,13 @@ static int update( void* userdata )
 
 
         if ( state == initializing ) {
-		freeMemory( pd );
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
 
-		outfile = pd->file->open( "tmean.txt", kFileWrite );
+
+		outfile = pd->file->open( "out.json", kFileWrite );
+
+		pd->json->initEncoder( encoder, writefile, pd, 1 );
+		//outfile = pd->file->open( "tmean.txt", kFileWrite );
 
 		year  = callYear( -1 );
 		for ( i = 0; i < NITERMAX; i++ ) {
@@ -226,7 +232,7 @@ static int update( void* userdata )
 
 			if ( callYear( 0 ) == NYEARS ) {
 				changeState( done );
-				pd->file->write( outfile, "1001", 102400 );
+				//pd->file->write( outfile, "1001", strlen( "1001" ) * sizeof( char ) );
 
 				break;
 			}
@@ -325,7 +331,6 @@ static int update( void* userdata )
 		pd->graphics->drawText( "lat", strlen( "lat" ), kASCIIEncoding, 5, 3 );
 		pd->graphics->drawText( "temp", strlen( "temp" ), kASCIIEncoding, 37, 3 );
 
-		units = pd->system->getMenuItemValue( unitsButton );
 		if ( units == Kelvin ) {
 			for ( i = NBELTS; i > 0; i-- ) {
 				pd->system->formatString( &string1, "%3d %5.1f", (int)roundf( deg2rad( lat[i] ) ), tlatprint[i] );
@@ -376,14 +381,19 @@ static int update( void* userdata )
 
 void reset( void* userdata )
 {
-	state    = initializing;
-	screen   = configure;
+	PlaydateAPI* pd = userdata;
+
+	freeMemory( pd );
+	state  = initializing;
+	screen = configure;
 	return;
 }
 
-void updateUnits( PlaydateAPI* pd, PDMenuItem *menuItem )
+void updateUnits( void* userdata )
 {
-	units = pd->system->getMenuItemValue( menuItem );
+	PlaydateAPI* pd = userdata;
+
+	units = pd->system->getMenuItemValue( unitsButton );
 	return;
 }
 
