@@ -1,18 +1,19 @@
 #include "main.h"
 
+PlaydateAPI* pd = NULL;
 LCDFont* font = NULL;
 PDMenuItem *resetButton = NULL;
 PDMenuItem *unitsButton = NULL;
+PDMenuItem *dataButton  = NULL;
 
 SDFile* outfile;
 
-json_encoder* encoder;
+Status state     = initializing;
+Display screen   = configure;
+Units units      = Kelvin;
+Logical showData = False;
 
-Status state   = initializing;
-Display screen = configure;
-Units units    = Kelvin;
-
-struct Plot plot1, plot2;
+Plot plot1, plot2;
 
 float temp[NPTS], lat[NPTS], xlat[NPTS], dxlat[NPTS-1], thermal[NPTS], diff[NPTS], area[NPTS];
 float latdeg[NPTS];
@@ -61,7 +62,10 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 
 		resetButton = pd->system->addMenuItem( "Reset", reset, pd );
 		unitsButton = pd->system->addOptionsMenuItem( "Units", unitlabels, NUMUNITS, updateUnits, pd );
+		dataButton  = pd->system->addCheckmarkMenuItem( "Show data", showData, toggleData, pd );
+
 		pd->system->setMenuItemValue( unitsButton, units );
+		//pd->system->setMenuItemValue( dataButton, showData );
 
 		if ( font == NULL ) {
 			pd->system->error("%s:%i Couldn't load font %s: %s", __FILE__, __LINE__, fontpath, err);
@@ -87,7 +91,7 @@ int eventHandler( PlaydateAPI* pd, PDSystemEvent event, uint32_t arg )
 
 static int update( void* userdata )
 {
-	PlaydateAPI* pd = userdata;
+	pd = userdata;
 
 	pd->graphics->clear( kColorWhite );
 	pd->graphics->setFont( font );
@@ -104,11 +108,7 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
 
-
-		outfile = pd->file->open( "out.json", kFileWrite );
-
-		pd->json->initEncoder( encoder, writefile, pd, 1 );
-		//outfile = pd->file->open( "tmean.txt", kFileWrite );
+		outfile = pd->file->open( "model.out", kFileWrite );
 
 		year  = callYear( -1 );
 		for ( i = 0; i < NITERMAX; i++ ) {
@@ -232,7 +232,8 @@ static int update( void* userdata )
 
 			if ( callYear( 0 ) == NYEARS ) {
 				changeState( done );
-				//pd->file->write( outfile, "1001", strlen( "1001" ) * sizeof( char ) );
+				pd->file->write( outfile, "Hello World", STRLEN * sizeof(char) );
+				//pd->file->write( outfile, tmeandaily, daymax * sizeof(float) );
 
 				break;
 			}
@@ -303,6 +304,9 @@ static int update( void* userdata )
 		pd->graphics->drawText( "PEBBLE", strlen( "PEBBLE" ), kASCIIEncoding, 80, 50+20 );
 	}
 	else {
+		drawPlot( pd, plot1 );
+		drawPlot( pd, plot2 );
+
 		if ( screen == annual ) {
 			tind      = yearprint;
 			tprint    = tmeantime;
@@ -321,10 +325,11 @@ static int update( void* userdata )
 				changeScreen( annual );
 			}
 		}
-		drawPlot( pd, plot1 );
 		plotArray( pd, plot1, latdeg, tlatprint, NPTS );
+		if ( showData == True ) {
+			plotArray( pd, plot1, earth_lat, earth_temp, earth_size );
+		}
 
-		drawPlot( pd, plot2 );
 		plotArray( pd, plot2, yearaxis, tmeantime, NYEARS + 1 );
 		plotMarker( pd, plot2, yearaxis, tmeantime, yearprint );
 
@@ -397,21 +402,11 @@ void updateUnits( void* userdata )
 	return;
 }
 
-void freeMemory( PlaydateAPI* pd )
+void toggleData( void* userdata )
 {
-	int i;
+	PlaydateAPI* pd = userdata;
 
-	string1    = pd->system->realloc( string1, 0 );
-	tmeandaily = pd->system->realloc( tmeandaily, 0 );
-	itercount  = pd->system->realloc( itercount, 0 );
-	daycount   = pd->system->realloc( daycount, 0 );
-	for ( i = 0 ; i < daymax; i++ ) {
-		tmeandailylattime[i] = pd->system->realloc( NULL, 0 );
-	}
-	tmeandailylattime = pd->system->realloc( NULL, 0 );
-
-	pd->file->close( outfile );
-
+	showData = pd->system->getMenuItemValue( dataButton );
 	return;
 }
 
@@ -433,5 +428,23 @@ void changeScreen( Display newscreen )
 	else if ( screen == annual ) {
 		steps = STEPS_PER_UPDATE;
 	}
+	return;
+}
+
+void freeMemory( PlaydateAPI* pd )
+{
+	int i;
+
+	string1    = pd->system->realloc( string1, 0 );
+	tmeandaily = pd->system->realloc( tmeandaily, 0 );
+	itercount  = pd->system->realloc( itercount, 0 );
+	daycount   = pd->system->realloc( daycount, 0 );
+	for ( i = 0 ; i < daymax; i++ ) {
+		tmeandailylattime[i] = pd->system->realloc( NULL, 0 );
+	}
+	tmeandailylattime = pd->system->realloc( NULL, 0 );
+
+	pd->file->close( outfile );
+
 	return;
 }

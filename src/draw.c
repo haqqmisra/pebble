@@ -2,7 +2,7 @@
 
 // Drawing/plotting functions for PEBBLE
 
-void createPlot( struct Plot* plt, int x, int y, int width, int height )
+void createPlot( Plot* plt, int x, int y, int width, int height )
 {
 	plt->xdraw    = x;
 	plt->ydraw    = y;
@@ -16,7 +16,7 @@ void createPlot( struct Plot* plt, int x, int y, int width, int height )
 	return;
 }
 
-void drawPlot( PlaydateAPI* pd, struct Plot plt )
+void drawPlot( PlaydateAPI* pd, Plot plt )
 {
 	int lenticks = 5;
 	int xaxisxoffset = -7;
@@ -46,7 +46,7 @@ void drawPlot( PlaydateAPI* pd, struct Plot plt )
 	return;
 }
 
-void setXlimits( struct Plot* plt, float xmin, float xmax )
+void setXlimits( Plot* plt, float xmin, float xmax )
 {
 	plt->xmin  = xmin;
 	plt->xmax  = xmax;
@@ -54,7 +54,7 @@ void setXlimits( struct Plot* plt, float xmin, float xmax )
 	return;
 }
 
-void setYlimits( struct Plot* plt, float ymin, float ymax )
+void setYlimits( Plot* plt, float ymin, float ymax )
 {
 	plt->ymin = ymin;
 	plt->ymax = ymax;
@@ -62,17 +62,17 @@ void setYlimits( struct Plot* plt, float ymin, float ymax )
 	return;
 }
 
-float xCoord( struct Plot plt, float x )
+float xCoord( Plot plt, float x )
 {
 	return plt.xorigin + ( x - plt.xmin ) * plt.xconv;
 }
 
-float yCoord( struct Plot plt, float y )
+float yCoord( Plot plt, float y )
 {
 	return plt.yorigin - ( y - plt.ymin ) * plt.yconv + 1;
 }
 
-void plotLine( PlaydateAPI* pd, struct Plot plt, float x1, float y1, float x2, float y2 )
+void plotLine( PlaydateAPI* pd, Plot plt, float x1, float y1, float x2, float y2 )
 {
 	float xx1, xx2, yy1, yy2;
 
@@ -97,7 +97,7 @@ void plotLine( PlaydateAPI* pd, struct Plot plt, float x1, float y1, float x2, f
 	return;
 }
 
-void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int size )
+void plotArray( PlaydateAPI* pd, Plot plt, float xdata[], float ydata[], int size )
 {
 	int i;
 
@@ -107,7 +107,7 @@ void plotArray( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], 
 	return;
 }
 
-void plotMarker( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[], int index )
+void plotMarker( PlaydateAPI* pd, Plot plt, float xdata[], float ydata[], int index )
 {
 	int xx = (int)xCoord( plt, xdata[index] );
 	int yy = (int)yCoord( plt, ydata[index] );
@@ -119,7 +119,7 @@ void plotMarker( PlaydateAPI* pd, struct Plot plt, float xdata[], float ydata[],
 	return;
 }
 
-void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
+void addXAxisLabels( Plot* plt, char label[][STRLEN], int size )
 {
 	int i;
 
@@ -129,7 +129,7 @@ void addXAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
 	return;
 }
 
-void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
+void addYAxisLabels( Plot* plt, char label[][STRLEN], int size )
 {
 	int i;
 

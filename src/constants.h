@@ -2,7 +2,7 @@
 #define constants_h
 
 // model settings
-#define NYEARS 20
+#define NYEARS 10
 #define TINIT 288
 #define NITERMAX 90000
 #define DT 8.64e4	// seconds (1 day = 8.64e4 seconds)
@@ -35,6 +35,7 @@
 #define NBELTS 18
 #define NPTS NBELTS+2
 #define NUMUNITS 2
+#define NPTSMAX 75
 
 // graphics constants
 #define SCREEN_WIDTH 400
