@@ -206,5 +206,7 @@ void annualMeanTempLat( float temp[], int niter, int npts, float *tmeanlat )
 	return;
 }
 
-
-
+float deg2rad( float nrad )
+{
+        return nrad * 180.0 / M_PI;
+}

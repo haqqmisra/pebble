@@ -6,13 +6,14 @@
 
 #include "pd_api.h"
 #include "model.h"
-#include "util.h"
 #include "draw.h"
 #include "io.h"
 #include "constants.h"
 
 #define NUMSTATUS 6
 #define NUMDISPLAY 3
+
+const char* fontpath = "fonts/font-rains-1x.pft";
 
 typedef enum { initializing, ready, running, paused, crash, done } Status;
 typedef enum { annual, daily, configure } Display;

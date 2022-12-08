@@ -1,70 +1,6 @@
 #include "draw.h"
 
-// Drawing/IO Functions for PEBBLE
-
-void printLatLine( PlaydateAPI* pd, float lat, float temp, int x, int y )
-{
-	char out[STRLEN], f1[STRLEN], f2[STRLEN];
-	float latdeg = roundf( deg2rad( lat ) );
-
-	ftoa( temp, f2, 1 );
-	float_to_string( latdeg, f1 );
-
-	f1[ strlen( f1 ) - 2 ] = '\0';
-
-	if ( latdeg > 0 ) {
-		if ( fabsf( latdeg ) < 10 ) {
-			strcpy( out, "  " );
-		}
-		else {
-			strcpy( out, " " );
-		}
-	}
-	else {
-		if ( fabsf( latdeg ) < 10 ) {
-			strcpy( out, " " );
-		}
-		else {
-			strcpy( out, "" );
-		}
-	}
-
-	strcat( out, f1 );
-	strcat( out, " " );
-	strcat( out, f2 );
-
-	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
-	return;
-}
-
-void printAllLatLines( PlaydateAPI* pd, float lat[], float temp[], int size, int x, int y )
-{
-	int i;
-	float dy = 12.5;
-	for ( i = size; i > 0; i-- ) {
-		printLatLine( pd, lat[i], temp[i], x, y - i * dy );
-	}
-	return;
-}
-
-void printFloat( PlaydateAPI* pd, int x, int y, float flt, int prec )
-{
-	char out[STRLEN];
-
-	ftoa( flt, out, prec );
-	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
-	return;
-}
-
-void printInt( PlaydateAPI* pd, int x, int y, int num, int prec )
-{
-	char out[STRLEN];
-
-	int_to_string( num, out, 10 );
-
-	pd->graphics->drawText( out, strlen( out ), kASCIIEncoding, x, y );
-	return;
-}
+// Drawing/plotting functions for PEBBLE
 
 void createPlot( struct Plot* plt, int x, int y, int width, int height )
 {
@@ -200,26 +136,5 @@ void addYAxisLabels( struct Plot* plt, char label[][STRLEN], int size )
 	for ( i = 0; i < size; i++ ) {
 		strcpy( plt->ylabels[i], label[i] );
 	}
-	return;
-}
-
-void batteryPercentString( PlaydateAPI* pd, char *out )
-{
-	int_to_string( pd->system->getBatteryPercentage(), out, 10 );
-        strcat( out, "%" );
-        return;
-}
-
-void drawVarFloat( PlaydateAPI* pd, char* name, float value, int x, int y )
-{
-	pd->graphics->drawText( name, strlen( name ), kASCIIEncoding, x, y );
-	printFloat( pd, x + strlen( name ) * VARSPACE - 1, y, value, 1 );
-	return;
-}
-
-void drawVarInt( PlaydateAPI* pd, char* name, int value, int x, int y )
-{
-	pd->graphics->drawText( name, strlen( name ), kASCIIEncoding, x, y );
-	printInt( pd, x + strlen( name ) * VARSPACE - 1, y, value, 2 );
 	return;
 }

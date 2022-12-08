@@ -1,9 +1,9 @@
 #include "main.h"
 
-const char* fontpath = "fonts/font-rains-1x.pft";
 LCDFont* font = NULL;
 PDMenuItem *resetButton = NULL;
 PDMenuItem *unitsButton = NULL;
+SDFile* outfile;
 
 Status state   = initializing;
 Display screen = configure;
@@ -44,6 +44,7 @@ char yaxislabel2[NUMYTICKS+1][STRLEN] = { "", "+20", "FRZ", "-20", "" };
 char msg1[NUMSTATUS][STRLEN];
 char msg2[NUMDISPLAY][STRLEN];
 char status1[STRLEN], status2[STRLEN];
+char* string1;
 char batterylife[STRLEN];
 
 
@@ -100,6 +101,8 @@ static int update( void* userdata )
         if ( state == initializing ) {
 		freeMemory( pd );
 		init( temp, lat, xlat, dxlat, diff, area, NPTS, NBELTS, TINIT );
+
+		outfile = pd->file->open( "tmean.txt", kFileWrite );
 
 		year  = callYear( -1 );
 		for ( i = 0; i < NITERMAX; i++ ) {
@@ -173,10 +176,12 @@ static int update( void* userdata )
 		setYlimits( &plot2, TFREEZE - 40, TFREEZE + 40 );
 		for ( i = 0; i < NUMXTICKS + 1; i++ ) {
 			if ( NYEARS < NUMXTICKS ) {
-				float_to_string( i * (float)NYEARS / NUMXTICKS, xaxislabel2[i] );
+				pd->system->formatString( &string1, "%0.1f", i * (float)NYEARS / NUMXTICKS, xaxislabel2[i] );
+				strcpy( xaxislabel2[i], string1 );
 			}
 			else {
-				int_to_string( (int)floorf( i * NYEARS / NUMXTICKS ), xaxislabel2[i], 10 );
+				pd->system->formatString( &string1, "%d", (int)floorf( i * NYEARS / NUMXTICKS ) );
+				strcpy( xaxislabel2[i], string1 );
 			}
 		}
 		addXAxisLabels( &plot2, xaxislabel2, NUMXTICKS + 1 );
@@ -221,6 +226,8 @@ static int update( void* userdata )
 
 			if ( callYear( 0 ) == NYEARS ) {
 				changeState( done );
+				pd->file->write( outfile, "1001", 102400 );
+
 				break;
 			}
 
@@ -320,28 +327,40 @@ static int update( void* userdata )
 
 		units = pd->system->getMenuItemValue( unitsButton );
 		if ( units == Kelvin ) {
-			printAllLatLines( pd, lat, tlatprint, NBELTS, 2, SCREEN_HEIGHT );
-			drawVarFloat( pd, "avg:", tprint[tind], 75, 3 );
-			pd->graphics->drawText( "K", strlen( "K" ), kASCIIEncoding, 152, 3 );
+			for ( i = NBELTS; i > 0; i-- ) {
+				pd->system->formatString( &string1, "%3d %5.1f", (int)roundf( deg2rad( lat[i] ) ), tlatprint[i] );
+				pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 2, SCREEN_HEIGHT - i * 12.5 );
+			}
+			pd->system->formatString( &string1, "avg=%5.1fK", tprint[tind] );
+			pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 75, 3 );
 		}
 		else if ( units == Celsius ) {
 			tconvert = tprint[tind] - TFREEZE;
 			for ( i = 0; i < NPTS; i++ ) {
 				tlatconvert[i] = tlatprint[i] - TFREEZE;
 			}
-			printAllLatLines( pd, lat, tlatconvert, NBELTS, 2, SCREEN_HEIGHT );
-			drawVarFloat( pd, "avg:", tconvert, 75, 3 );
-			pd->graphics->drawText( "C", strlen( "C" ), kASCIIEncoding, 152, 3 );
+			for ( i = NBELTS; i > 0; i-- ) {
+				pd->system->formatString( &string1, "%3d %5.1f", (int)roundf( deg2rad( lat[i] ) ), tlatconvert[i] );
+				pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 2, SCREEN_HEIGHT - i * 12.5 );
+			}
+			pd->system->formatString( &string1, "avg=%5.1fC", tconvert );
+			pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 75, 3 );
 		}
 
-		//pd->graphics->drawText( "avg:", strlen( "avg:" ), kASCIIEncoding, 75, 3 );
-		//printFloat( pd, 110, 3, tprint[tind], 1 );
+	        pd->system->formatString( &string1, "sol=%4.2f", 1360. / S0 );
+		pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 168, 3 );
 
-		drawVarFloat( pd, "sol:", S0/S0, 175, 3 );
-		drawVarFloat( pd, "obl:", OBLIQUITY, 252, 3 );
+	        pd->system->formatString( &string1, "obl=%4.1f", OBLIQUITY );
+		pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 246, 3 );
 
-		drawVarInt( pd, "year:", yearprint, 315, SCREEN_HEIGHT - 20 );
-		drawVarInt( pd, "day:", daycount[iterprint], 323, SCREEN_HEIGHT - 9 );
+	        pd->system->formatString( &string1, "co2=%4.1f", 0 );
+		pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 323, 3 );
+
+	        pd->system->formatString( &string1, "year=%d", yearprint );
+		pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 315, SCREEN_HEIGHT - 20 );
+
+	        pd->system->formatString( &string1, "day=%d", daycount[iterprint] );
+		pd->graphics->drawText( string1, strlen( string1 ), kASCIIEncoding, 323, SCREEN_HEIGHT - 9 );
 
 		//pd->graphics->drawText( "time:", strlen( "time:" ), kASCIIEncoding, 315, 3 );
 		//printFloat( pd, 350, 3, runtime, 1 );
@@ -349,9 +368,6 @@ static int update( void* userdata )
 
 	pd->graphics->drawText( status1, strlen( status1 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 20 );
 	pd->graphics->drawText( status2, strlen( status2 ), kASCIIEncoding, 85, SCREEN_HEIGHT - 9 );
-
-	//batteryPercentString( pd, batterylife );
-	//pd->graphics->drawText( batterylife, strlen( batterylife ), kASCIIEncoding, SCREEN_WIDTH - 32, SCREEN_HEIGHT - 9 );
 
 	//pd->system->drawFPS( SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10 );
 
@@ -375,6 +391,7 @@ void freeMemory( PlaydateAPI* pd )
 {
 	int i;
 
+	string1    = pd->system->realloc( string1, 0 );
 	tmeandaily = pd->system->realloc( tmeandaily, 0 );
 	itercount  = pd->system->realloc( itercount, 0 );
 	daycount   = pd->system->realloc( daycount, 0 );
@@ -382,6 +399,8 @@ void freeMemory( PlaydateAPI* pd )
 		tmeandailylattime[i] = pd->system->realloc( NULL, 0 );
 	}
 	tmeandailylattime = pd->system->realloc( NULL, 0 );
+
+	pd->file->close( outfile );
 
 	return;
 }

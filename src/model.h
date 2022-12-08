@@ -2,7 +2,6 @@
 #define model_h
 
 #include <math.h>
-#include "util.h"
 
 void init( float *temp, float *lat, float *x, float *dxlat, float *diff, float *area, int npts, int nbelts, float tempinit );
 void updateDiffusion( float temp[], float xlat[], float dxlat[], float diff[], float *thermal, int npts );
@@ -16,6 +15,7 @@ float getMeanTemp( float temp[], float area[], int npts );
 int callYear( int query );
 float* callTempLatSum( int query, float newtemp[] );
 void annualMeanTempLat( float temp[], int niter, int npts, float *tmeanlat );
+float deg2rad( float nrad );
 
 enum yearquery { initialize, print, add };
 
