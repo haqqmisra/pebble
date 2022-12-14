@@ -8,7 +8,6 @@
 #define DT 8.64e4	// seconds (1 day = 8.64e4 seconds)
 
 // model parameters
-#define TFREEZE 273.16
 #define S0 1360		// W m^-2
 #define OBLIQUITY 23.5
 //#define ARAD 199.0	// W m^-
@@ -21,14 +20,12 @@
 #define D0 0.38		// W m^-2 K^-1
 #define CP 2.1e8	// J m^-2 K^-1
 //#define CP 3.0e8	// J m^-2 K^-1
+#define MSTAR 1.9891e30		// kg (1 solar mass = 1.9891e30 kg)
+#define RORBIT 1.495978707e11 // m (1 AU = 1.495978707e11 m)
 
 // physical constants
-#define TFREEZE 273.16	// K
+#define TFREEZE 273.16		// K
 #define BIG_G 6.6732e-11	// m^3 kg^-1 s^-2
-//#define MSTAR 2.e30	// kg (1 solar mass = 2.e30 kg)
-#define MSTAR 1.9891e30	// kg (1 solar mass = 2.e30 kg)
-//#define RORBIT 1.496e11 // m (1 AU = 1.496e11 m)
-#define RORBIT 1.495978707e11 // m (1 AU = 1.496e11 m)
 
 // model constants
 #define STEPS_PER_UPDATE 30

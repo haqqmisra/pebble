@@ -196,6 +196,7 @@ static int update( void* userdata )
 		changeState( ready );
 	}
 	else if ( state == ready ) {
+
 	        if ( pushed & kButtonA ) {
 			changeState( running );
 			changeScreen( annual );
@@ -302,6 +303,12 @@ static int update( void* userdata )
 
 	if ( screen == configure ) {
 		pd->graphics->drawText( "PEBBLE", strlen( "PEBBLE" ), kASCIIEncoding, 80, 50+20 );
+
+
+		for ( i = -70; i < 10; i+=5 ) {
+			pd->graphics->drawEllipse( i, 0, 70, SCREEN_HEIGHT, 1, 0, 180, kColorBlack );
+		}
+
 	}
 	else {
 		drawPlot( pd, plot1 );
