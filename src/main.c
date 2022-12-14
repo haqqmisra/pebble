@@ -304,11 +304,12 @@ static int update( void* userdata )
 	if ( screen == configure ) {
 		pd->graphics->drawText( "PEBBLE", strlen( "PEBBLE" ), kASCIIEncoding, 80, 50+20 );
 
-
-		for ( i = -70; i < 10; i+=5 ) {
-			pd->graphics->drawEllipse( i, 0, 70, SCREEN_HEIGHT, 1, 0, 180, kColorBlack );
+		for ( i = -25; i < 55; i+=1 ) {
+			pd->graphics->drawEllipse( i, -SCREEN_HEIGHT / 2, 400, 2 * SCREEN_HEIGHT, 1, 180, 360, kColorBlack );
 		}
-
+		for ( i = -260; i < -155; i+=8 ) {
+			pd->graphics->drawEllipse( i, 0, SCREEN_HEIGHT, SCREEN_HEIGHT, 1, 0, 180, kColorXOR );
+		}
 	}
 	else {
 		drawPlot( pd, plot1 );
